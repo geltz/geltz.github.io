@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="index.css">
+  <script src="index.js" defer></script>
+  <title>metadata viewer</title>
+</head>
+<body>
+  <div class="container">
+    <h1>metadata viewer</h1>
+    <div class="drop-zone" id="dropZone">
+      <p class="drop-text">drag and drop an image or .safetensors file here or click to select</p>
+      <input type="file" id="fileInput" accept="image/*,.safetensors" />
+    </div>
+    <div class="results hidden" id="results">
+      <div class="results-header">
+        <div class="results-title" id="resultsTitle">thumbnail</div>
+        <div class="results-actions">
+          <button class="icon-btn" id="copyAllBtn" aria-label="Copy metadata">
+            <svg viewBox="0 0 24 24" fill="none">
+              <rect x="9" y="9" width="10" height="10" rx="2" stroke-width="1.5"></rect>
+              <path d="M6 15H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1" stroke-width="1.5"></path>
+            </svg>
+          </button>
+          <button class="icon-btn" id="exportJsonBtn" aria-label="Export metadata as JSON">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path d="M12 3v12" stroke-width="1.5" stroke-linecap="round"></path>
+              <path d="m7 10 5 5 5-5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+              <path d="M5 17h14" stroke-width="1.5" stroke-linecap="round"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div class="preview hidden" id="preview">
+        <img id="imagePreview" class="preview-img" alt="Thumbnail preview" />
+        <div class="preview-meta">
+          <div class="preview-name" id="previewName"></div>
+          <div class="preview-size" id="previewSize"></div>
+        </div>
+      </div>
+      <div class="section" id="sourceSection">
+        <div class="section-header">
+          <div class="section-left"><div class="section-title">source</div></div>
+        </div>
+        <div class="section-body"><div class="content" id="source"></div></div>
+      </div>
+      <div class="section" id="positiveSection">
+        <div class="section-header">
+          <div class="section-left"><div class="section-title">positive</div></div>
+          <div class="section-actions">
+            <button class="icon-btn copy-btn" data-target="positivePrompt" aria-label="Copy positive prompt">
+              <svg viewBox="0 0 24 24" fill="none">
+                <rect x="9" y="9" width="10" height="10" rx="2" stroke-width="1.5"></rect>
+                <path d="M6 15H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1" stroke-width="1.5"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div class="section-body"><div class="content" id="positivePrompt"></div></div>
+      </div>
+      <div class="section" id="negativeSection">
+        <div class="section-header">
+          <div class="section-left"><div class="section-title">negative</div></div>
+          <div class="section-actions">
+            <button class="icon-btn copy-btn" data-target="negativePrompt" aria-label="Copy negative prompt">
+              <svg viewBox="0 0 24 24" fill="none">
+                <rect x="9" y="9" width="10" height="10" rx="2" stroke-width="1.5"></rect>
+                <path d="M6 15H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1" stroke-width="1.5"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div class="section-body"><div class="content" id="negativePrompt"></div></div>
+      </div>
+      <div class="section" id="settingsSection">
+        <div class="section-header">
+          <div class="section-left"><div class="section-title">settings</div></div>
+        </div>
+        <div class="section-body"><div class="settings-grid" id="settings"></div></div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
