@@ -170,7 +170,7 @@
         };
     }
 
-    function parseComfyUIObject(workflow) {
+		function parseComfyUIObject(workflow) {
         if (!workflow || typeof workflow !== "object") return {
             prompt: "",
             negative_prompt: "",
@@ -179,13 +179,15 @@
         };
         let ksampler = null,
             ckpt = null,
-            latent = null;
+            latent = null,
+            seedNode = null;
         for (const key of Object.keys(workflow)) {
             const node = workflow[key];
             const t = node && node.class_type;
             if (t === "KSampler") ksampler = node;
             else if (t === "CheckpointLoaderSimple") ckpt = node;
             else if (t === "EmptyLatentImage") latent = node;
+            else if (node && node.inputs && 'seed' in node.inputs && !seedNode) seedNode = node;
         }
         if (!ksampler) return {
             prompt: "",
@@ -199,7 +201,7 @@
             "cfg scale": inp.cfg,
             sampler: inp.sampler_name,
             scheduler: inp.scheduler,
-            seed: inp.seed
+            seed: seedNode ? seedNode.inputs.seed : inp.seed
         };
         if (ckpt && ckpt.inputs) settings.model = ckpt.inputs.ckpt_name || "unknown";
         if (latent && latent.inputs && latent.inputs.width && latent.inputs.height) settings.size = `${latent.inputs.width}x${latent.inputs.height}`;
@@ -217,8 +219,17 @@
             settings: {},
             source: "comfyui"
         };
-        for (const [k, v] of Object.entries(settings))
-            if (v !== undefined && v !== null) result.settings[k.toLowerCase()] = oneline(String(v));
+        for (const [k, v] of Object.entries(settings)) {
+            if (v !== undefined && v !== null) {
+                if (typeof v === 'number') {
+                    result.settings[k.toLowerCase()] = String(v);
+                } else if (typeof v === 'string') {
+                    result.settings[k.toLowerCase()] = v.replace(/,/g, '');
+                } else {
+                    result.settings[k.toLowerCase()] = String(v);
+                }
+            }
+        }
         return result;
     }
 
