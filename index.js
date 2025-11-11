@@ -31,20 +31,44 @@
         });
         fileInput.addEventListener('change', (e) => handleFile(e.target.files[0]));
 
-		copyAllBtn.addEventListener('click', () => {
-		if (!currentParsedMeta) return;
-		const text = JSON.stringify(currentParsedMeta, null, 2);
-		if (navigator.clipboard?.writeText) {
-			navigator.clipboard.writeText(text);
-		} else {
-			const ta = document.createElement('textarea');
-			ta.value = text;
-			document.body.appendChild(ta);
-			ta.select();
-			document.execCommand('copy');
-			ta.remove();
-		}
-	});
+		copyAllBtn.addEventListener('click', async () => {
+		    if (!currentParsedMeta) return;
+		    const text = JSON.stringify(currentParsedMeta, null, 2);
+		    
+		    try {
+		        // Try the modern clipboard API first
+		        if (navigator.clipboard && navigator.clipboard.writeText) {
+		            await navigator.clipboard.writeText(text);
+		            console.log('Copied to clipboard successfully!');
+		            return;
+		        }
+		        
+		        // Fallback for older browsers
+		        const textArea = document.createElement('textarea');
+		        textArea.value = text;
+		        textArea.style.position = 'fixed';
+		        textArea.style.left = '-999999px';
+		        textArea.style.top = '-999999px';
+		        document.body.appendChild(textArea);
+		        textArea.focus();
+		        textArea.select();
+		        
+		        const successful = document.execCommand('copy');
+		        document.body.removeChild(textArea);
+		        
+		        if (successful) {
+		            console.log('Copied to clipboard using fallback!');
+		        } else {
+		            console.error('Failed to copy using fallback method');
+		            // Last resort - show the text to user
+		            alert('Copy failed. Here is the text:\n\n' + text);
+		        }
+		    } catch (err) {
+		        console.error('Failed to copy: ', err);
+		        // Last resort - show the text to user
+		        alert('Copy failed. Here is the text:\n\n' + text);
+		    }
+		});
 
 	exportJsonBtn.addEventListener('click', () => {
 		if (!currentParsedMeta) return;
@@ -676,3 +700,4 @@
         }
 
     })();
+
