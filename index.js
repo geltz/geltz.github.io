@@ -527,7 +527,7 @@
 
         function setModeImage() {
             currentMode = 'image';
-            resultsTitle.textContent = 'thumbnail';
+            resultsTitle.textContent = 'image';
             preview.classList.remove('hidden');
             positiveSection.classList.remove('hidden');
             negativeSection.classList.remove('hidden');
@@ -674,4 +674,5 @@
             const mb = kb / 1024;
             return mb.toFixed(1) + ' MB';
         }
+
     })();
