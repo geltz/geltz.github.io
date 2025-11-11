@@ -1,3 +1,1 @@
-metadata viewer
-- stealth png info
-- lora headers
+metadata viewer for images and loras
