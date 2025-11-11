@@ -71,37 +71,66 @@
     });
 
     // Individual copy buttons functionality
-    const copyButtons = document.querySelectorAll('.copy-btn');
-    copyButtons.forEach(btn => {
-        btn.addEventListener('click', async () => {
-            const targetId = btn.dataset.target;
-            const el = document.getElementById(targetId);
-            if (!el) return;
+	const copyButtons = document.querySelectorAll('.copy-btn');
+	copyButtons.forEach(btn => {
+		btn.addEventListener('click', async () => {
+			const targetId = btn.dataset.target;
+			const el = document.getElementById(targetId);
+			if (!el) return;
 
-            const text = el.textContent.trim();
-            if (!text) return;
+			const text = el.textContent.trim();
+			if (!text || text === '(not found)') return;
 
-            // try modern API first
-            try {
-                if (navigator.clipboard && navigator.clipboard.writeText) {
-                    await navigator.clipboard.writeText(text);
-                    return;
-                }
-            } catch (e) {
-                console.error(e);
-            }
+			try {
+				// Try modern clipboard API first
+				if (navigator.clipboard && navigator.clipboard.writeText) {
+					await navigator.clipboard.writeText(text);
+					showCopyFeedback(btn, 'Copied!');
+					return;
+				}
+				
+				// Fallback for older browsers
+				const textArea = document.createElement('textarea');
+				textArea.value = text;
+				textArea.style.position = 'fixed';
+				textArea.style.left = '-999999px';
+				textArea.style.top = '-999999px';
+				document.body.appendChild(textArea);
+				textArea.focus();
+				textArea.select();
+				
+				const successful = document.execCommand('copy');
+				document.body.removeChild(textArea);
+				
+				if (successful) {
+					showCopyFeedback(btn, 'Copied!');
+				} else {
+					showCopyFeedback(btn, 'Failed - select text manually');
+				}
+			} catch (err) {
+				console.error('Copy failed: ', err);
+				showCopyFeedback(btn, 'Failed - select text manually');
+			}
+		});
+	});
 
-            // fallback
-            const ta = document.createElement('textarea');
-            ta.value = text;
-            ta.style.position = 'fixed';
-            ta.style.top = '-9999px';
-            document.body.appendChild(ta);
-            ta.select();
-            document.execCommand('copy');
-            document.body.removeChild(ta);
-        });
-    });
+	// helper function for user feedback
+	function showCopyFeedback(button, message) {
+		const originalTitle = button.getAttribute('aria-label') || '';
+		button.setAttribute('aria-label', message);
+		
+		// Visual feedback - temporary color change
+		const svg = button.querySelector('svg');
+		if (svg) {
+			const originalColor = svg.style.stroke;
+			svg.style.stroke = '#10b981'; // Green color for success
+			
+			setTimeout(() => {
+				button.setAttribute('aria-label', originalTitle);
+				svg.style.stroke = originalColor || '#3f6c9b';
+			}, 2000);
+		}
+	}
 
     exportJsonBtn.addEventListener('click', () => {
         if (!currentParsedMeta) return;

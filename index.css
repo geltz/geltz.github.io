@@ -34,6 +34,8 @@
     .icon-btn { border: none; background: transparent; cursor: pointer; padding: 0.25rem; display: inline-flex; align-items: center; justify-content: center; }
     .icon-btn svg { width: 18px; height: 18px; stroke: #3f6c9b; transition: stroke 0.15s ease, transform 0.15s ease; }
     .icon-btn:hover svg { stroke: #274664; transform: translateY(-1px); }
+	.icon-btn:active {     transform: scale(0.95);     transition: transform 0.1s ease; }
+	.icon-btn.copied svg {     stroke: #10b981 !important; }
     .preview { display: flex; gap: 1rem; align-items: center; margin-bottom: 1.5rem; }
     .preview-img { width: 80px; height: 80px; border-radius: 12px; object-fit: cover; background: #dbe3eb; border: 1px solid rgba(63, 108, 155, 0.25); }
     .preview-meta { display: flex; flex-direction: column; gap: 0.25rem; }
