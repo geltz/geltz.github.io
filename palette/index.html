@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Palette Generator</title>
+    <style>
+        /* --- Shared Theme Variables --- */
+        :root {
+            --bg-gradient-start: #dfeaf5;
+            --bg-gradient-mid: #edf3f8;
+            --bg-gradient-end: #f6f9fc;
+            
+            --color-primary: #3f6c9b;
+            --color-primary-light: #5a8fbe;
+            --color-accent: #7aa6d4;
+            --color-text: #405165;
+            --color-text-light: #6c8dab;
+            
+            --glass-bg: rgba(255, 255, 255, 0.65);
+            --glass-border: rgba(255, 255, 255, 0.8);
+            --glass-shadow: 0 8px 32px rgba(63, 108, 155, 0.08);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            background: radial-gradient(circle at top, var(--bg-gradient-start) 0%, var(--bg-gradient-mid) 45%, var(--bg-gradient-end) 100%);
+            color: var(--color-text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            padding-bottom: 15vh;
+            overflow-x: hidden;
+        }
+
+        /* --- Spotlight Overlay --- */
+        #spotlight {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            pointer-events: none; z-index: 9999;
+            background: radial-gradient(600px circle at var(--x, 50%) var(--y, 50%), rgba(255, 255, 255, 0.4), transparent 40%);
+            mix-blend-mode: overlay;
+            opacity: 0; transition: opacity 0.5s ease;
+        }
+
+        /* --- Main Layout --- */
+        .app-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            max-width: 900px;
+            width: 100%;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 2rem;
+            box-shadow: var(--glass-shadow);
+            transition: transform 0.3s ease;
+            position: relative;
+            z-index: 10;
+        }
+
+        @media (max-width: 768px) {
+            .app-container { grid-template-columns: 1fr; }
+        }
+
+        /* --- Drop Zone --- */
+        .drop-zone {
+            position: relative;
+            width: 100%;
+            min-height: 400px;
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.4);
+            border: 2px dashed rgba(63, 108, 155, 0.2);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            /* Isolate stacking context */
+            isolation: isolate;
+        }
+
+        .drop-zone:hover {
+            background: rgba(255, 255, 255, 0.6);
+            border-color: var(--color-accent);
+        }
+
+        .drop-zone.drag-over {
+            background: rgba(255, 255, 255, 0.8);
+            transform: scale(0.99);
+            border-color: var(--color-primary);
+        }
+
+        .drop-zone img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            border-radius: 14px;
+            position: absolute;
+            top: 0; left: 0;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            /* Image sits above the ripple */
+            z-index: 5; 
+        }
+
+        .placeholder-text {
+            pointer-events: none;
+            text-align: center;
+            color: var(--color-text-light);
+            z-index: 4;
+            transition: opacity 0.3s;
+        }
+        
+        /* The Ripple Effect on Drop */
+        .drop-ripple {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(122, 166, 212, 0.25);
+            transform: scale(0);
+            animation: ripple-in 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+            pointer-events: none;
+            /* Ripple sits behind image (z:5) but above background */
+            z-index: 1; 
+        }
+
+        @keyframes ripple-in {
+            to { transform: scale(5); opacity: 0; }
+        }
+
+        /* --- Palette Panel --- */
+        .palette-panel {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 1rem;
+            opacity: 0;
+            transform: translateX(20px);
+            transition: all 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+
+        .palette-panel.visible {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        h2 {
+            font-size: 1.5rem;
+            color: var(--color-primary);
+            margin-bottom: 1.5rem;
+            font-weight: 700;
+        }
+
+        .swatch-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
+            gap: 1rem;
+            width: 100%;
+            margin-bottom: 2rem;
+        }
+
+        .swatch-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+            /* Speed up appearance */
+            animation: pop-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+            opacity: 0;
+            transform: scale(0.5);
+        }
+
+        .swatch {
+            width: 70px;
+            height: 70px;
+            border-radius: 18px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            transition: transform 0.2s;
+            position: relative;
+        }
+
+        .swatch:hover {
+            transform: translateY(-4px) scale(1.05);
+        }
+
+        .swatch:active {
+            transform: scale(0.95);
+        }
+
+        /* The Color Ripple Effect */
+        @keyframes color-ripple {
+            0% { box-shadow: 0 0 0 0 var(--swatch-color); }
+            70% { box-shadow: 0 0 0 10px rgba(255,255,255,0); }
+            100% { box-shadow: 0 0 0 0 rgba(255,255,255,0); }
+        }
+        
+        .swatch.rippling {
+            animation: color-ripple 0.6s ease-out;
+        }
+
+        @keyframes pop-in {
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .hex-code {
+            font-size: 0.75rem;
+            font-family: ui-monospace, 'Cascadia Code', 'Source Code Pro', monospace;
+            color: var(--color-text);
+            background: rgba(255,255,255,0.4);
+            padding: 2px 6px;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+        
+        .swatch:hover + .hex-code {
+            background: #fff;
+            color: var(--color-primary);
+        }
+
+        /* --- Buttons --- */
+        .btn-copy-all {
+            align-self: flex-start;
+            background: transparent;
+            border: 1px solid var(--glass-border);
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+            color: var(--color-text);
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-copy-all:hover {
+            background: rgba(255,255,255,0.5);
+            color: var(--color-primary);
+            border-color: var(--color-accent);
+        }
+        
+        .btn-copy-all:active { transform: scale(0.98); }
+
+        /* Notification Toast */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background: var(--color-primary);
+            color: white;
+            padding: 10px 24px;
+            border-radius: 30px;
+            font-size: 0.9rem;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(63, 108, 155, 0.3);
+            z-index: 10000;
+        }
+        
+        .toast.show {
+            opacity: 0.69;
+            transform: translateX(-50%) translateY(0);
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Flashlight -->
+    <div id="spotlight"></div>
+
+    <div class="app-container">
+        <!-- Left: Image Drop -->
+        <div class="drop-zone" id="dropZone">
+            <input type="file" id="fileInput" accept="image/*" style="display:none">
+            <img id="previewImg" alt="Preview">
+            <div class="placeholder-text" id="placeholderText">
+                <div style="font-size: 2.5rem; margin-bottom: 1rem; opacity:0.5;">+</div>
+                drag & drop image<br>
+                <span style="font-size: 0.85rem; opacity: 0.7">or click to upload</span>
+            </div>
+        </div>
+
+        <!-- Right: Palette -->
+        <div class="palette-panel" id="palettePanel">
+            <h2>palette</h2>
+            <div class="swatch-grid" id="swatchGrid">
+                <!-- Swatches generated here -->
+            </div>
+            <button class="btn-copy-all" id="copyAllBtn">
+                copy all hex
+            </button>
+        </div>
+    </div>
+
+    <div class="toast" id="toast">copied to clipboard</div>
+
+    <script>
+        // --- Spotlight Effect ---
+        const spotlight = document.getElementById('spotlight');
+        let opacitySet = false;
+        document.addEventListener('mousemove', (e) => {
+            spotlight.style.setProperty('--x', e.clientX + 'px');
+            spotlight.style.setProperty('--y', e.clientY + 'px');
+            if (!opacitySet) { spotlight.style.opacity = '1'; opacitySet = true; }
+        });
+
+        // --- Logic ---
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const previewImg = document.getElementById('previewImg');
+        const placeholderText = document.getElementById('placeholderText');
+        const palettePanel = document.getElementById('palettePanel');
+        const swatchGrid = document.getElementById('swatchGrid');
+        const copyAllBtn = document.getElementById('copyAllBtn');
+        const toast = document.getElementById('toast');
+
+        let extractedColors = [];
+
+        // Drag Events
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('drag-over');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('drag-over');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('drag-over');
+            
+            // Visual Ripple on drop
+            createDropRipple(e.clientX, e.clientY);
+            
+            const file = e.dataTransfer.files[0];
+            if (file && file.type.startsWith('image/')) {
+                processFile(file);
+            }
+        });
+
+        // Click to Upload
+        dropZone.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files[0]) processFile(e.target.files[0]);
+        });
+
+        function createDropRipple(x, y) {
+            const rect = dropZone.getBoundingClientRect();
+            const ripple = document.createElement('div');
+            ripple.classList.add('drop-ripple');
+            // Position relative to container
+            ripple.style.left = (x - rect.left) + 'px';
+            ripple.style.top = (y - rect.top) + 'px';
+            ripple.style.width = '50px';
+            ripple.style.height = '50px';
+            
+            // Append to dropzone
+            dropZone.appendChild(ripple);
+            setTimeout(() => ripple.remove(), 1200);
+        }
+
+        function processFile(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                previewImg.src = e.target.result;
+                previewImg.onload = () => {
+                    previewImg.style.opacity = 1;
+                    placeholderText.style.opacity = 0;
+                    extractColors(previewImg);
+                };
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // --- Refined Color Extraction Algorithm ---
+        function extractColors(imgElement) {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Increased size slightly for better sampling on complex images
+            const size = 100; 
+            canvas.width = size;
+            canvas.height = size;
+            ctx.drawImage(imgElement, 0, 0, size, size);
+
+            // Get pixel data
+            const imageData = ctx.getImageData(0, 0, size, size).data;
+            const colorMap = new Map();
+
+            // 1. Quantize and Count
+            for (let i = 0; i < imageData.length; i += 4) {
+                const alpha = imageData[i+3];
+                // Ignore transparent or semi-transparent pixels (common in PNGs)
+                if (alpha < 200) continue; 
+
+                const r = imageData[i];
+                const g = imageData[i+1];
+                const b = imageData[i+2];
+
+                // Quantize (bucket size 16)
+                // Using bitwise operator for standard rounding to floor of 16
+                const rQ = (r >> 4) << 4;
+                const gQ = (g >> 4) << 4;
+                const bQ = (b >> 4) << 4;
+
+                const key = `${rQ},${gQ},${bQ}`;
+                const count = colorMap.get(key) || 0;
+                colorMap.set(key, count + 1);
+            }
+
+            // 2. Sort by frequency
+            const sortedColors = [...colorMap.entries()]
+                .sort((a, b) => b[1] - a[1])
+                .map(entry => {
+                    const [r, g, b] = entry[0].split(',').map(Number);
+                    return { r, g, b, count: entry[1] };
+                });
+
+            // 3. Adaptive Selection
+            // Start with strict distance, if we don't find enough colors, lower the threshold
+            let finalPalette = [];
+            const thresholds = [60, 40, 20, 10, 5]; // Distance thresholds to try
+            
+            for (let t = 0; t < thresholds.length; t++) {
+                if (finalPalette.length >= 8) break;
+                
+                const minDistance = thresholds[t];
+                
+                // Try to fill remaining slots
+                for (const c of sortedColors) {
+                    if (finalPalette.length >= 8) break;
+
+                    // Check if this color is distinct from all currently selected colors
+                    let isDistinct = true;
+                    for (const existing of finalPalette) {
+                        const dist = Math.sqrt(
+                            (c.r - existing.r) ** 2 +
+                            (c.g - existing.g) ** 2 +
+                            (c.b - existing.b) ** 2
+                        );
+                        if (dist < minDistance) {
+                            isDistinct = false;
+                            break;
+                        }
+                    }
+
+                    if (isDistinct) {
+                        finalPalette.push(c);
+                    }
+                }
+            }
+
+            // If somehow we still don't have colors (e.g. solid color image), just take top ones
+            if (finalPalette.length === 0 && sortedColors.length > 0) {
+                finalPalette.push(sortedColors[0]);
+            }
+
+            extractedColors = finalPalette.map(c => rgbToHex(c.r, c.g, c.b));
+            renderPalette(extractedColors);
+        }
+
+        function renderPalette(colors) {
+            swatchGrid.innerHTML = '';
+            palettePanel.classList.add('visible');
+
+            colors.forEach((hex, index) => {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'swatch-container';
+                // Faster staggered animation (0.05s instead of 0.1s)
+                wrapper.style.animationDelay = `${index * 0.05}s`;
+
+                const swatch = document.createElement('div');
+                swatch.className = 'swatch';
+                swatch.style.backgroundColor = hex;
+                swatch.style.setProperty('--swatch-color', hex);
+                
+                // Trigger ripple shortly after it pops in
+                setTimeout(() => {
+                    swatch.classList.add('rippling');
+                }, (index * 50) + 300);
+
+                swatch.onclick = () => {
+                    copyToClipboard(hex);
+                    swatch.classList.remove('rippling');
+                    void swatch.offsetWidth; 
+                    swatch.classList.add('rippling');
+                };
+
+                const code = document.createElement('span');
+                code.className = 'hex-code';
+                code.innerText = hex;
+
+                wrapper.appendChild(swatch);
+                wrapper.appendChild(code);
+                swatchGrid.appendChild(wrapper);
+            });
+        }
+
+        function rgbToHex(r, g, b) {
+            // Ensure we stay within 0-255 range just in case
+            r = Math.min(255, Math.max(0, r));
+            g = Math.min(255, Math.max(0, g));
+            b = Math.min(255, Math.max(0, b));
+            return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toUpperCase();
+        }
+
+        // --- Copy Functionality ---
+        function copyToClipboard(text) {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(() => showToast(`copied ${text}`));
+            } else {
+                // Fallback
+                const textArea = document.createElement("textarea");
+                textArea.value = text;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand("Copy");
+                textArea.remove();
+                showToast(`copied ${text}`);
+            }
+        }
+
+        copyAllBtn.addEventListener('click', () => {
+            if (extractedColors.length === 0) return;
+            const text = extractedColors.join(', ');
+            copyToClipboard(text);
+        });
+
+        function showToast(msg) {
+            toast.textContent = msg;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2000);
+        }
+
+    </script>
+</body>
+</html>
