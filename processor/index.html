@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>processor</title>
+    <style>
+        /* --- Shared Variables & Theme --- */
+        :root {
+            --bg-gradient-start: #dfeaf5;
+            --bg-gradient-mid: #edf3f8;
+            --bg-gradient-end: #f6f9fc;
+            
+            --color-primary: #3f6c9b;
+            --color-primary-light: #5a8fbe;
+            --color-accent: #7aa6d4;
+            --color-text: #405165;
+            --color-text-light: #6c8dab;
+            
+            --glass-bg: rgba(255, 255, 255, 0.65);
+            --glass-panel: rgba(255, 255, 255, 0.75);
+            --glass-border: rgba(255, 255, 255, 0.8);
+            --glass-shadow: 0 8px 32px rgba(63, 108, 155, 0.08);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            background: radial-gradient(circle at top, var(--bg-gradient-start) 0%, var(--bg-gradient-mid) 45%, var(--bg-gradient-end) 100%);
+            color: var(--color-text);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+        }
+
+        /* --- The Flashlight Overlay --- */
+        #spotlight {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            pointer-events: none; z-index: 9999;
+            background: radial-gradient(600px circle at var(--x, 50%) var(--y, 50%), rgba(255, 255, 255, 0.4), transparent 40%);
+            mix-blend-mode: overlay;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+
+        /* --- Layout --- */
+        .main-layout {
+            display: grid;
+            grid-template-columns: 1fr 360px;
+            width: 100%;
+            height: 100vh;
+        }
+
+        @media (max-width: 900px) {
+            .main-layout { grid-template-columns: 1fr; overflow-y: auto; display: block; }
+            body { overflow-y: auto; }
+            .viewport { height: 60vh; min-height: 400px; }
+            .sidebar { height: auto; min-height: 100vh; }
+        }
+
+        /* --- Viewport (Canvas Area) --- */
+        .viewport {
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255,255,255,0.2);
+            cursor: grab;
+            user-select: none;
+        }
+        
+        .viewport:active { cursor: grabbing; }
+
+        canvas {
+            box-shadow: 0 20px 50px rgba(63, 108, 155, 0.15);
+            border-radius: 4px;
+            background: url('data:image/svg+xml;utf8,<svg width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="0" width="10" height="10" fill="%23f0f4f8"/><rect x="10" y="10" width="10" height="10" fill="%23f0f4f8"/></svg>');
+            transform-origin: center;
+            pointer-events: none; /* Let clicks pass to viewport for dragging */
+        }
+
+        .empty-state {
+            position: absolute;
+            text-align: center;
+            color: var(--color-primary);
+            opacity: 0.6;
+            pointer-events: none;
+            font-weight: 500;
+            line-height: 1.6;
+            background: rgba(255,255,255,0.5);
+            padding: 2rem;
+            border-radius: 16px;
+            backdrop-filter: blur(4px);
+        }
+
+        /* --- Sidebar --- */
+        .sidebar {
+            background: var(--glass-panel);
+            backdrop-filter: blur(20px);
+            border-left: 1px solid rgba(255,255,255,0.6);
+            padding: 2rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            box-shadow: -10px 0 30px rgba(63, 108, 155, 0.05);
+        }
+
+        /* Custom Scrollbar */
+        .sidebar::-webkit-scrollbar { width: 6px; }
+        .sidebar::-webkit-scrollbar-track { background: transparent; }
+        .sidebar::-webkit-scrollbar-thumb { background: rgba(63, 108, 155, 0.2); border-radius: 10px; }
+        .sidebar::-webkit-scrollbar-thumb:hover { background: rgba(63, 108, 155, 0.4); }
+
+        header h1 {
+            color: var(--color-primary);
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+            letter-spacing: -0.02em;
+        }
+
+        .meta-info {
+            font-size: 0.85rem;
+            color: var(--color-text-light);
+        }
+
+        #status-indicator {
+            color: var(--color-accent);
+            font-weight: 600;
+        }
+
+        /* --- Controls & Inputs --- */
+        .section-title {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: var(--color-primary);
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid rgba(63, 108, 155, 0.15);
+        }
+
+        .section-title span:last-child {
+            font-size: 0.75rem;
+            color: var(--color-text-light);
+            font-weight: 400;
+            background: rgba(63, 108, 155, 0.1);
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        .control-group { margin-bottom: 1.25rem; }
+
+        .label-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: var(--color-text);
+        }
+
+        .value-display {
+            color: var(--color-primary);
+            font-weight: 600;
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* Styled Range Input */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        
+        input[type=range]:focus { outline: none; }
+
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 6px;
+            cursor: pointer;
+            background: rgba(63, 108, 155, 0.15);
+            border-radius: 10px;
+            transition: background 0.2s;
+        }
+
+        input[type=range]::-webkit-slider-thumb {
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: #fff;
+            border: 2px solid var(--color-accent);
+            cursor: pointer;
+            -webkit-appearance: none;
+            margin-top: -5px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+            transition: transform 0.1s, background 0.2s;
+        }
+
+        input[type=range]:hover::-webkit-slider-thumb { transform: scale(1.1); border-color: var(--color-primary); }
+        input[type=range]:active::-webkit-slider-thumb { transform: scale(0.95); background: var(--color-primary); border-color: var(--color-primary); }
+
+        .heavy-effect::-webkit-slider-thumb { border-color: #d66; }
+        .warning {
+            font-size: 0.7rem; color: #d66; margin-top: 0.5rem; display: none;
+            background: rgba(221, 102, 102, 0.1); padding: 4px 8px; border-radius: 4px;
+        }
+
+        /* --- Buttons --- */
+        .actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .upload-wrapper { grid-column: span 2; }
+
+        button {
+            font-family: inherit;
+            background: rgba(255,255,255,0.5);
+            border: 1px solid var(--color-accent);
+            color: var(--color-primary);
+            padding: 0.75rem;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+        }
+
+        button:hover {
+            background: var(--color-primary);
+            color: #fff;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(63, 108, 155, 0.2);
+        }
+
+        button:active { transform: scale(0.98); }
+
+        .upload-btn {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.4);
+            border: 2px dashed var(--color-accent);
+            color: var(--color-primary);
+            padding: 1.5rem;
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .upload-btn:hover {
+            background: rgba(255, 255, 255, 0.8);
+            border-color: var(--color-primary);
+            color: var(--color-primary);
+        }
+
+        input[type="file"] { display: none; }
+
+    </style>
+</head>
+<body>
+
+<div id="spotlight"></div>
+
+<div class="main-layout">
+    <div class="viewport" id="viewport">
+        <div class="empty-state" id="placeholder">
+            <div style="font-size: 2rem; margin-bottom: 0.5rem;">⊕</div>
+            drag & drop or import image<br>
+            <span style="font-size: 0.85rem; opacity: 0.8">click & drag to pan canvas</span>
+        </div>
+        <canvas id="canvas"></canvas>
+    </div>
+
+    <div class="sidebar">
+        <header>
+            <h1>processor</h1>
+            <div class="meta-info">
+                engine: canvas_2d • status: <span id="status-indicator">idle</span>
+            </div>
+        </header>
+
+        <div class="actions">
+            <div class="upload-wrapper">
+                <button class="upload-btn" onclick="document.getElementById('upload').click()">
+                    <span>import source image</span>
+                </button>
+                <input type="file" id="upload" accept="image/*">
+            </div>
+            
+            <button id="resetBtn">Reset</button>
+            <button id="saveBtn">Export</button>
+        </div>
+
+        <!-- 1. Basic Adjustment -->
+        <div class="controls">
+            <div class="section-title">
+                Basics
+                <span>ADJ</span>
+            </div>
+            
+            <div class="control-group">
+                <div class="label-row"><label>Brightness</label> <span id="val-bright" class="value-display">0</span></div>
+                <input type="range" id="bright" min="-100" max="100" value="0">
+            </div>
+            
+            <div class="control-group">
+                <div class="label-row"><label>Contrast</label> <span id="val-contrast" class="value-display">0</span></div>
+                <input type="range" id="contrast" min="-100" max="100" value="0">
+            </div>
+
+            <div class="control-group">
+                <div class="label-row"><label>Saturation</label> <span id="val-sat" class="value-display">0</span></div>
+                <input type="range" id="sat" min="-100" max="100" value="0">
+            </div>
+        </div>
+
+        <!-- 2. Geometry -->
+        <div class="controls">
+            <div class="section-title">
+                Geometry
+                <span>XY</span>
+            </div>
+            
+            <div class="control-group">
+                <div class="label-row"><label>Mosaic Resolution</label> <span id="val-mosaic" class="value-display">1</span></div>
+                <input type="range" id="mosaic" min="1" max="50" value="1">
+            </div>
+            
+            <div class="control-group">
+                <div class="label-row"><label>VHS Jitter</label> <span id="val-jitter" class="value-display">0</span></div>
+                <input type="range" id="jitter" min="0" max="50" value="0">
+            </div>
+
+            <div class="control-group">
+                <div class="label-row"><label>Slice Drift</label> <span id="val-slices" class="value-display">0</span></div>
+                <input type="range" id="slices" min="0" max="100" value="0">
+            </div>
+        </div>
+
+        <!-- 3. Heavy Filters -->
+        <div class="controls">
+            <div class="section-title">
+                Artistic
+                <span>CPU</span>
+            </div>
+
+            <div class="control-group">
+                <div class="label-row"><label>Oil Paint (Kuwahara)</label> <span id="val-kuwahara" class="value-display">0</span></div>
+                <input type="range" id="kuwahara" class="heavy-effect" min="0" max="10" value="0">
+                <div class="warning" id="warn-heavy">⚠ High CPU Usage</div>
+            </div>
+
+            <div class="control-group">
+                <div class="label-row"><label>Edge Detect</label> <span id="val-edge" class="value-display">0</span></div>
+                <input type="range" id="edge" class="heavy-effect" min="0" max="100" value="0">
+            </div>
+        </div>
+
+        <!-- 4. Glitch & Post -->
+        <div class="controls">
+            <div class="section-title">
+                Effects
+                <span>FX</span>
+            </div>
+
+            <div class="control-group">
+                <div class="label-row"><label>RGB Split</label> <span id="val-shift" class="value-display">0</span></div>
+                <input type="range" id="shift" min="0" max="50" value="0">
+            </div>
+
+            <div class="control-group">
+                <div class="label-row"><label>Hue Rotate</label> <span id="val-hue" class="value-display">0</span></div>
+                <input type="range" id="hue" min="0" max="360" value="0">
+            </div>
+
+            <div class="control-group">
+                <div class="label-row"><label>Noise Grain</label> <span id="val-noise" class="value-display">0</span></div>
+                <input type="range" id="noise" min="0" max="100" value="0">
+            </div>
+
+            <div class="control-group">
+                <div class="label-row"><label>Scanlines</label> <span id="val-scan" class="value-display">0</span></div>
+                <input type="range" id="scan" min="0" max="100" value="0">
+            </div>
+
+            <div class="control-group">
+                <div class="label-row"><label>Vignette</label> <span id="val-vignette" class="value-display">0</span></div>
+                <input type="range" id="vignette" min="0" max="100" value="0">
+            </div>
+            
+            <div class="control-group">
+                <div class="label-row"><label>Bit Crush</label> <span id="val-crush" class="value-display">0</span></div>
+                <input type="range" id="crush" min="0" max="100" value="0">
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    /* --- Spotlight / Light Effect --- */
+    const spotlight = document.getElementById('spotlight');
+    let opacitySet = false;
+
+    document.addEventListener('mousemove', (e) => {
+        spotlight.style.setProperty('--x', e.clientX + 'px');
+        spotlight.style.setProperty('--y', e.clientY + 'px');
+        if (!opacitySet) { spotlight.style.opacity = '1'; opacitySet = true; }
+    });
+
+    document.addEventListener('touchmove', (e) => {
+        const touch = e.touches[0];
+        spotlight.style.setProperty('--x', touch.clientX + 'px');
+        spotlight.style.setProperty('--y', touch.clientY + 'px');
+        if (!opacitySet) { spotlight.style.opacity = '1'; opacitySet = true; }
+    });
+
+    /* --- IMAGE PROCESSING LOGIC (Preserved) --- */
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    const placeholder = document.getElementById('placeholder');
+    const viewport = document.getElementById('viewport');
+    const statusSpan = document.getElementById('status-indicator');
+
+    // Buffers
+    const tempCanvas = document.createElement('canvas');
+    const tempCtx = tempCanvas.getContext('2d', { willReadFrequently: true });
+    
+    // State
+    let srcImage = new Image();
+    let loaded = false;
+    let isDragging = false;
+    let startX, startY, currentX = 0, currentY = 0;
+    let renderReq = null;
+
+    // Parameter Mapping
+    const params = {
+        bright: document.getElementById('bright'),
+        contrast: document.getElementById('contrast'),
+        sat: document.getElementById('sat'),
+        mosaic: document.getElementById('mosaic'),
+        jitter: document.getElementById('jitter'),
+        slices: document.getElementById('slices'),
+        kuwahara: document.getElementById('kuwahara'),
+        edge: document.getElementById('edge'),
+        shift: document.getElementById('shift'),
+        hue: document.getElementById('hue'),
+        noise: document.getElementById('noise'),
+        scan: document.getElementById('scan'),
+        vignette: document.getElementById('vignette'),
+        crush: document.getElementById('crush')
+    };
+
+    document.getElementById('upload').addEventListener('change', handleUpload);
+    document.getElementById('saveBtn').addEventListener('click', saveImage);
+    document.getElementById('resetBtn').addEventListener('click', resetAll);
+
+    // Drag & Drop Support on Viewport
+    viewport.addEventListener('dragover', (e) => { e.preventDefault(); viewport.style.background = 'rgba(255,255,255,0.3)'; });
+    viewport.addEventListener('dragleave', (e) => { e.preventDefault(); viewport.style.background = 'rgba(255,255,255,0.2)'; });
+    viewport.addEventListener('drop', (e) => {
+        e.preventDefault();
+        viewport.style.background = 'rgba(255,255,255,0.2)';
+        const file = e.dataTransfer.files[0];
+        if(file && file.type.startsWith('image/')) loadFile(file);
+    });
+
+    Object.keys(params).forEach(key => {
+        const el = params[key];
+        el.addEventListener('input', (e) => {
+            document.getElementById(`val-${key}`).textContent = e.target.value;
+            if (key === 'kuwahara') {
+                document.getElementById('warn-heavy').style.display = 
+                    parseInt(e.target.value) > 0 ? 'inline-block' : 'none';
+            }
+            triggerRender();
+        });
+    });
+
+    viewport.addEventListener('mousedown', (e) => {
+        if(!loaded) return;
+        isDragging = true;
+        startX = e.clientX - currentX;
+        startY = e.clientY - currentY;
+        viewport.style.cursor = 'grabbing';
+    });
+
+    window.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        e.preventDefault();
+        currentX = e.clientX - startX;
+        currentY = e.clientY - startY;
+        canvas.style.transform = `translate(${currentX}px, ${currentY}px)`;
+    });
+
+    window.addEventListener('mouseup', () => { isDragging = false; viewport.style.cursor = 'grab'; });
+
+    function handleUpload(e) {
+        const file = e.target.files[0];
+        if (file) loadFile(file);
+    }
+
+    function loadFile(file) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            srcImage.onload = () => {
+                const MAX_DIM = 1200; 
+                let w = srcImage.width;
+                let h = srcImage.height;
+                
+                if (w > MAX_DIM || h > MAX_DIM) {
+                    const ratio = w / h;
+                    if (w > h) { w = MAX_DIM; h = MAX_DIM / ratio; }
+                    else { h = MAX_DIM; w = MAX_DIM * ratio; }
+                }
+
+                w = Math.floor(w);
+                h = Math.floor(h);
+
+                canvas.width = w;
+                canvas.height = h;
+                tempCanvas.width = w;
+                tempCanvas.height = h;
+
+                loaded = true;
+                placeholder.style.display = 'none';
+                
+                const rect = viewport.getBoundingClientRect();
+                currentX = (rect.width / 2) - (w / 2);
+                currentY = (rect.height / 2) - (h / 2);
+                canvas.style.transform = `translate(${currentX}px, ${currentY}px)`;
+
+                resetAll();
+            }
+            srcImage.src = event.target.result;
+        }
+        reader.readAsDataURL(file);
+    }
+
+    function resetAll() {
+        Object.keys(params).forEach(key => {
+            const el = params[key];
+            el.value = (key === 'mosaic') ? 1 : 0;
+            document.getElementById(`val-${key}`).textContent = el.value;
+        });
+        document.getElementById('warn-heavy').style.display = 'none';
+        if(loaded) triggerRender();
+    }
+
+    function saveImage() {
+        if(!loaded) return;
+        const link = document.createElement('a');
+        link.download = `processed_${Date.now()}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+    }
+
+    function triggerRender() {
+        if (!loaded) return;
+        if (renderReq) cancelAnimationFrame(renderReq);
+        renderReq = requestAnimationFrame(render);
+    }
+
+    function render() {
+        statusSpan.textContent = 'processing...';
+        const w = canvas.width;
+        const h = canvas.height;
+
+        // STAGE 1: Geometry
+        tempCtx.clearRect(0, 0, w, h);
+        const mosaicVal = parseInt(params.mosaic.value);
+        if (mosaicVal > 1) {
+            const sw = Math.ceil(w / mosaicVal);
+            const sh = Math.ceil(h / mosaicVal);
+            tempCtx.imageSmoothingEnabled = false;
+            tempCtx.drawImage(srcImage, 0, 0, sw, sh);
+            tempCtx.drawImage(tempCanvas, 0, 0, sw, sh, 0, 0, w, h);
+        } else {
+            tempCtx.drawImage(srcImage, 0, 0, w, h);
+        }
+
+        ctx.clearRect(0, 0, w, h);
+        const sliceVal = parseInt(params.slices.value);
+        const jitterVal = parseInt(params.jitter.value);
+
+        if (sliceVal > 0 || jitterVal > 0) {
+            const numSlices = Math.floor(h / (sliceVal > 0 ? Math.max(5, 50 - sliceVal/2) : 10)); 
+            const sliceHeight = h / numSlices;
+            for (let i = 0; i < numSlices; i++) {
+                const sy = i * sliceHeight;
+                let dx = 0;
+                if (jitterVal > 0) dx += Math.sin(i * 0.5 + Date.now()/100) * jitterVal;
+                else dx += Math.sin(i * 0.5) * jitterVal;
+                if (sliceVal > 0 && Math.random() > 0.7) dx += (Math.random() - 0.5) * (sliceVal * 5);
+                ctx.drawImage(tempCanvas, 0, sy, w, sliceHeight, dx, sy, w, sliceHeight);
+            }
+        } else {
+            ctx.drawImage(tempCanvas, 0, 0);
+        }
+
+        // STAGE 2: Heavy Filters
+        let imageData = ctx.getImageData(0, 0, w, h);
+        const originalData = new Uint8ClampedArray(imageData.data);
+        
+        const kuwaharaVal = parseInt(params.kuwahara.value);
+        const edgeVal = parseInt(params.edge.value);
+
+        if (kuwaharaVal > 0) {
+            applyKuwahara(imageData.data, originalData, w, h, kuwaharaVal);
+            originalData.set(imageData.data);
+        }
+        if (edgeVal > 0) {
+            applyEdgeDetection(imageData.data, originalData, w, h, edgeVal);
+            originalData.set(imageData.data);
+        }
+
+        // STAGE 3: Pixel Manipulation
+        const d = imageData.data;
+        const len = d.length;
+        const pBright = parseInt(params.bright.value);
+        const pContrast = parseInt(params.contrast.value);
+        const pSat = parseInt(params.sat.value);
+        const pShift = parseInt(params.shift.value) * 4;
+        const pHue = parseInt(params.hue.value);
+        const pNoise = parseInt(params.noise.value);
+        const pScan = parseInt(params.scan.value);
+        const pVig = parseInt(params.vignette.value);
+        const pCrush = parseInt(params.crush.value);
+
+        const contrastFactor = (259 * (pContrast + 255)) / (255 * (259 - pContrast));
+        let rotCos, rotSin;
+        if (pHue > 0) {
+            const rad = pHue * (Math.PI / 180);
+            rotCos = Math.cos(rad);
+            rotSin = Math.sin(rad);
+        }
+
+        const cx = w / 2;
+        const cy = h / 2;
+        const maxDist = Math.sqrt(cx*cx + cy*cy);
+
+        for (let i = 0; i < len; i += 4) {
+            let r = originalData[i], g = originalData[i+1], b = originalData[i+2];
+
+            if (pShift > 0) {
+                const offset = pShift;
+                if (i + offset < len) r = originalData[i + offset]; 
+                if (i - offset >= 0) b = originalData[i - offset + 2];
+            }
+
+            r += pBright; g += pBright; b += pBright;
+
+            if (pContrast !== 0) {
+                r = contrastFactor * (r - 128) + 128;
+                g = contrastFactor * (g - 128) + 128;
+                b = contrastFactor * (b - 128) + 128;
+            }
+
+            if (pSat !== 0) {
+                const gray = 0.2989*r + 0.5870*g + 0.1140*b;
+                const sVal = 1 + (pSat / 100);
+                r = gray + (r - gray) * sVal;
+                g = gray + (g - gray) * sVal;
+                b = gray + (b - gray) * sVal;
+            }
+
+            if (pHue > 0) {
+                const lumR = 0.213, lumG = 0.715, lumB = 0.072;
+                let R = r, G = g, B = b;
+                r = R * (lumR + rotCos * (1 - lumR) + rotSin * (-lumR)) + G * (lumG + rotCos * (-lumG) + rotSin * (-lumG)) + B * (lumB + rotCos * (-lumB) + rotSin * (1 - lumB));
+                g = R * (lumR + rotCos * (-lumR) + rotSin * 0.143) + G * (lumG + rotCos * (1 - lumG) + rotSin * 0.140) + B * (lumB + rotCos * (-lumB) + rotSin * -0.283);
+                b = R * (lumR + rotCos * (-lumR) + rotSin * -(1 - lumR)) + G * (lumG + rotCos * (-lumG) + rotSin * lumG) + B * (lumB + rotCos * (1 - lumB) + rotSin * lumB);
+            }
+
+            if (pNoise > 0) {
+                const n = (Math.random() - 0.5) * pNoise * 2;
+                r += n; g += n; b += n;
+            }
+
+            if (pCrush > 0) {
+                const levels = Math.max(2, 32 - Math.floor(pCrush / 3.5));
+                const step = 255 / (levels - 1);
+                r = Math.round(r / step) * step;
+                g = Math.round(g / step) * step;
+                b = Math.round(b / step) * step;
+            }
+
+            const pxIndex = i / 4;
+            const x = pxIndex % w;
+            const y = Math.floor(pxIndex / w);
+
+            if (pScan > 0 && y % 3 === 0) {
+                const scanFactor = 1 - (pScan / 200);
+                r *= scanFactor; g *= scanFactor; b *= scanFactor;
+            }
+
+            if (pVig > 0) {
+                const dist = Math.sqrt((x - cx) ** 2 + (y - cy) ** 2);
+                const strength = 1 - ((dist / maxDist) * (pVig/100));
+                r *= strength; g *= strength; b *= strength;
+            }
+
+            d[i] = r; d[i+1] = g; d[i+2] = b;
+        }
+
+        ctx.putImageData(imageData, 0, 0);
+        statusSpan.textContent = 'ready';
+    }
+
+    function applyKuwahara(dest, src, width, height, radius) {
+        const r = radius;
+        for (let y = 0; y < height; y++) {
+            for (let x = 0; x < width; x++) {
+                if (x < r || x >= width - r || y < r || y >= height - r) {
+                    const idx = (y * width + x) * 4;
+                    dest[idx] = src[idx]; dest[idx+1] = src[idx+1]; dest[idx+2] = src[idx+2];
+                    continue;
+                }
+                let minVar = Number.MAX_VALUE;
+                let bestMean = [0, 0, 0];
+                const quadrants = [{ dx: -r, dy: -r }, { dx: 0, dy: -r }, { dx: -r, dy: 0 }, { dx: 0, dy: 0 }];
+
+                for (let q = 0; q < 4; q++) {
+                    let meanR = 0, meanG = 0, meanB = 0, sumR2 = 0, sumG2 = 0, sumB2 = 0, count = 0;
+                    for (let dy = 0; dy <= r; dy++) {
+                        for (let dx = 0; dx <= r; dx++) {
+                            const nIdx = ((y + quadrants[q].dy + dy) * width + (x + quadrants[q].dx + dx)) * 4;
+                            const nr = src[nIdx], ng = src[nIdx+1], nb = src[nIdx+2];
+                            meanR += nr; meanG += ng; meanB += nb;
+                            sumR2 += nr * nr; sumG2 += ng * ng; sumB2 += nb * nb;
+                            count++;
+                        }
+                    }
+                    meanR /= count; meanG /= count; meanB /= count;
+                    const totalVar = ((sumR2 / count) - (meanR * meanR)) + ((sumG2 / count) - (meanG * meanG)) + ((sumB2 / count) - (meanB * meanB));
+                    if (totalVar < minVar) { minVar = totalVar; bestMean = [meanR, meanG, meanB]; }
+                }
+                const i = (y * width + x) * 4;
+                dest[i] = bestMean[0]; dest[i+1] = bestMean[1]; dest[i+2] = bestMean[2];
+            }
+        }
+    }
+
+    function applyEdgeDetection(dest, src, width, height, amount) {
+        const w = width;
+        const mix = amount / 100;
+        for (let y = 1; y < height - 1; y++) {
+            for (let x = 1; x < width - 1; x++) {
+                const idx = (y * w + x) * 4;
+                let r = 0, g = 0, b = 0;
+                r += src[idx] * 8; g += src[idx+1] * 8; b += src[idx+2] * 8;
+                for (let ky = -1; ky <= 1; ky++) {
+                    for (let kx = -1; kx <= 1; kx++) {
+                        if (kx === 0 && ky === 0) continue;
+                        const nIdx = ((y + ky) * w + (x + kx)) * 4;
+                        r -= src[nIdx]; g -= src[nIdx+1]; b -= src[nIdx+2];
+                    }
+                }
+                const edgeVal = (Math.abs(r) + Math.abs(g) + Math.abs(b)) / 3;
+                const orgR = src[idx], orgG = src[idx+1], orgB = src[idx+2];
+                if (edgeVal > 50) {
+                    dest[idx] = orgR * (1-mix) + (255) * mix;
+                    dest[idx+1] = orgG * (1-mix) + (255) * mix;
+                    dest[idx+2] = orgB * (1-mix) + (255) * mix;
+                } else {
+                    dest[idx] = orgR; dest[idx+1] = orgG; dest[idx+2] = orgB;
+                }
+            }
+        }
+    }
+</script>
+</body>
+</html>

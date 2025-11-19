@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>metadata</title>
+  <script src="metadata.js" defer></script>
+  <style>
+    /* --- Shared Variables & Theme (From Processor) --- */
+    :root {
+      --bg-gradient-start: #dfeaf5;
+      --bg-gradient-mid: #edf3f8;
+      --bg-gradient-end: #f6f9fc;
+      
+      --color-primary: #3f6c9b;
+      --color-primary-light: #5a8fbe;
+      --color-accent: #7aa6d4;
+      --color-text: #405165;
+      --color-text-light: #6c8dab;
+      
+      --glass-bg: rgba(255, 255, 255, 0.65);
+      --glass-panel: rgba(255, 255, 255, 0.75);
+      --glass-border: rgba(255, 255, 255, 0.8);
+      --glass-shadow: 0 8px 32px rgba(63, 108, 155, 0.08);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      /* Segoe UI preferred as requested */
+      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+      background: radial-gradient(circle at top, var(--bg-gradient-start) 0%, var(--bg-gradient-mid) 45%, var(--bg-gradient-end) 100%);
+      color: var(--color-text);
+      min-height: 100vh;
+      padding: 2rem;
+      line-height: 1.5;
+    }
+
+    /* --- The Flashlight Overlay --- */
+    #spotlight {
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      pointer-events: none; z-index: 9999;
+      background: radial-gradient(600px circle at var(--x, 50%) var(--y, 50%), rgba(255, 255, 255, 0.4), transparent 40%);
+      mix-blend-mode: overlay;
+      opacity: 0;
+      transition: opacity 0.5s ease;
+    }
+
+    /* --- Main Container --- */
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      background: var(--glass-panel);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-border);
+      border-radius: 16px;
+      padding: 2rem;
+      box-shadow: var(--glass-shadow);
+    }
+
+    /* --- Header --- */
+    h1 {
+      color: var(--color-primary);
+      font-size: 1.75rem;
+      font-weight: 700;
+      margin-bottom: 0.25rem;
+      letter-spacing: -0.02em;
+    }
+
+    .header-meta {
+      font-size: 0.85rem;
+      color: var(--color-text-light);
+      margin-bottom: 2rem;
+    }
+
+    /* --- Drop Zone --- */
+    .drop-zone {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.4);
+      border: 2px dashed var(--color-accent);
+      color: var(--color-primary);
+      padding: 3rem 2rem;
+      border-radius: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      margin-bottom: 2rem;
+    }
+
+    .drop-zone:hover, .drop-zone.drag-over {
+      background: rgba(255, 255, 255, 0.8);
+      border-color: var(--color-primary);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(63, 108, 155, 0.1);
+    }
+
+    .drop-text {
+      font-weight: 600;
+      font-size: 1rem;
+      pointer-events: none;
+    }
+
+    input[type="file"] { display: none; }
+
+    /* --- Buttons --- */
+    .icon-btn {
+      font-family: inherit;
+      background: rgba(255,255,255,0.5);
+      border: 1px solid var(--color-accent);
+      color: var(--color-primary);
+      padding: 0.5rem;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+
+    .icon-btn:hover {
+      background: var(--color-primary);
+      color: #fff;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(63, 108, 155, 0.2);
+    }
+
+    .icon-btn:active { transform: scale(0.98); }
+
+    .icon-btn svg {
+      width: 18px;
+      height: 18px;
+      stroke: currentColor;
+    }
+
+    /* --- Results Section --- */
+    .hidden { display: none !important; }
+
+    .results-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid rgba(63, 108, 155, 0.15);
+    }
+
+    .results-title {
+      color: var(--color-primary);
+      font-weight: 600;
+      font-size: 1.1rem;
+    }
+
+    .results-actions {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    /* --- Preview Area --- */
+    .preview {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 2rem;
+      background: rgba(255,255,255,0.3);
+      padding: 1rem;
+      border-radius: 12px;
+    }
+
+    .preview-img {
+      max-width: 100%;
+      max-height: 400px;
+      border-radius: 8px;
+      box-shadow: 0 10px 30px rgba(63, 108, 155, 0.15);
+      background: url('data:image/svg+xml;utf8,<svg width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="0" width="10" height="10" fill="%23f0f4f8"/><rect x="10" y="10" width="10" height="10" fill="%23f0f4f8"/></svg>');
+    }
+
+    .preview-meta {
+      margin-top: 1rem;
+      text-align: center;
+      font-size: 0.85rem;
+      color: var(--color-text-light);
+    }
+
+    .preview-name { font-weight: 600; color: var(--color-primary); margin-bottom: 2px; }
+
+    /* --- Data Sections --- */
+    .section {
+      margin-bottom: 0.75rem; /* Reduced margin for compactness */
+      background: rgba(255, 255, 255, 0.3);
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.4);
+      overflow: hidden;
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.5rem 0.8rem; /* Compact header padding */
+      background: rgba(63, 108, 155, 0.05);
+      border-bottom: 1px solid rgba(63, 108, 155, 0.1);
+    }
+
+    .section-title {
+      color: var(--color-primary);
+      font-weight: 600;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .section-body {
+      padding: 0.5rem 0.8rem; /* Reduced padding */
+      font-size: 0.9rem;
+      color: var(--color-text);
+      word-break: break-word;
+      white-space: pre-wrap;
+      /* CHANGED: Use Segoe UI/Sans instead of Monospace */
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; 
+      /* CHANGED: Tighter line height */
+      line-height: 1.35; 
+    }
+
+    /* --- Settings Grid --- */
+    .settings-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 0.35rem; /* Reduced gap */
+    }
+    
+    .setting-item {
+      background: rgba(255,255,255,0.5);
+      padding: 0.35rem 0.6rem; /* Reduced padding */
+      border-radius: 6px;
+      font-size: 0.85rem;
+      line-height: 1.3;
+    }
+
+    /* Scrollbar Styling */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(63, 108, 155, 0.2); border-radius: 10px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(63, 108, 155, 0.4); }
+  </style>
+</head>
+<body>
+
+  <div id="spotlight"></div>
+
+  <div class="container">
+    <header>
+        <h1>metadata</h1>
+        <div class="header-meta">engine: local_file • status: waiting for input</div>
+    </header>
+
+    <div class="drop-zone" id="dropZone">
+      <p class="drop-text">drag & drop image / .safetensors<br><span style="font-size: 0.8em; opacity: 0.7; font-weight: 400;">or click to browse files</span></p>
+      <input type="file" id="fileInput" accept="image/*,.safetensors" />
+    </div>
+
+    <div class="results hidden" id="results">
+      
+      <!-- Thumbnail Header -->
+      <div class="results-header">
+        <div class="results-title" id="resultsTitle">Preview</div>
+        <div class="results-actions">
+          <button class="icon-btn" id="copyAllBtn" aria-label="Copy metadata" title="Copy All">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+          </button>
+          <button class="icon-btn" id="exportJsonBtn" aria-label="Export metadata as JSON" title="Export JSON">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="preview hidden" id="preview">
+        <img id="imagePreview" class="preview-img" alt="Thumbnail preview" />
+        <div class="preview-meta">
+          <div class="preview-name" id="previewName"></div>
+          <div class="preview-size" id="previewSize"></div>
+        </div>
+      </div>
+
+      <!-- Source Section -->
+      <div class="section" id="sourceSection">
+        <div class="section-header">
+          <div class="section-left"><div class="section-title">Source</div></div>
+        </div>
+        <div class="section-body"><div class="content" id="source"></div></div>
+      </div>
+
+      <!-- Positive Prompt -->
+      <div class="section" id="positiveSection">
+        <div class="section-header">
+          <div class="section-left"><div class="section-title">Positive Prompt</div></div>
+          <div class="section-actions">
+            <button class="icon-btn copy-btn" data-target="positivePrompt" aria-label="Copy positive prompt">
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div class="section-body"><div class="content" id="positivePrompt"></div></div>
+      </div>
+
+      <!-- Negative Prompt -->
+      <div class="section" id="negativeSection">
+        <div class="section-header">
+          <div class="section-left"><div class="section-title">Negative Prompt</div></div>
+          <div class="section-actions">
+            <button class="icon-btn copy-btn" data-target="negativePrompt" aria-label="Copy negative prompt">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                  </svg>
+            </button>
+          </div>
+        </div>
+        <div class="section-body"><div class="content" id="negativePrompt"></div></div>
+      </div>
+
+      <!-- Settings -->
+      <div class="section" id="settingsSection">
+        <div class="section-header">
+          <div class="section-left"><div class="section-title">Generation Settings</div></div>
+        </div>
+        <div class="section-body"><div class="settings-grid" id="settings"></div></div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    /* --- Spotlight / Light Effect (Matches Processor) --- */
+    const spotlight = document.getElementById('spotlight');
+    let opacitySet = false;
+
+    document.addEventListener('mousemove', (e) => {
+        spotlight.style.setProperty('--x', e.clientX + 'px');
+        spotlight.style.setProperty('--y', e.clientY + 'px');
+        if (!opacitySet) { spotlight.style.opacity = '1'; opacitySet = true; }
+    });
+
+    document.addEventListener('touchmove', (e) => {
+        const touch = e.touches[0];
+        spotlight.style.setProperty('--x', touch.clientX + 'px');
+        spotlight.style.setProperty('--y', touch.clientY + 'px');
+        if (!opacitySet) { spotlight.style.opacity = '1'; opacitySet = true; }
+    });
+
+    // Click to upload wrapper
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    
+    dropZone.addEventListener('click', () => fileInput.click());
+    
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.classList.add('drag-over');
+    });
+    dropZone.addEventListener('dragleave', () => {
+        dropZone.classList.remove('drag-over');
+    });
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('drag-over');
+    });
+  </script>
+</body>
+</html>
