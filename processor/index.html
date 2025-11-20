@@ -68,11 +68,13 @@
             align-items: center;
             justify-content: center;
             background: rgba(255,255,255,0.2);
-            cursor: grab;
+            cursor: pointer; /* Changed to pointer to indicate clickable for import */
             user-select: none;
         }
         
-        .viewport:active { cursor: grabbing; }
+        /* Only show grab cursor when content is loaded (handled via JS toggling classes or logic) */
+        .viewport.has-image { cursor: grab; }
+        .viewport.has-image:active { cursor: grabbing; }
 
         canvas {
             box-shadow: 0 20px 50px rgba(63, 108, 155, 0.15);
@@ -244,7 +246,6 @@
         .actions {
             display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1.5rem;
         }
-        .upload-wrapper { grid-column: span 2; }
 
         button {
             font-family: inherit; background: rgba(255,255,255,0.5);
@@ -256,13 +257,6 @@
             background: var(--color-primary); color: #fff;
             transform: translateY(-1px); box-shadow: 0 4px 12px rgba(63, 108, 155, 0.2);
         }
-        .upload-btn {
-            width: 100%; background: rgba(255, 255, 255, 0.4);
-            border: 2px dashed var(--color-accent); color: var(--color-primary);
-            padding: 1.5rem; border-radius: 16px;
-            display: flex; flex-direction: column; align-items: center; gap: 0.5rem;
-        }
-        .upload-btn:hover { background: rgba(255, 255, 255, 0.8); border-color: var(--color-primary); }
         input[type="file"] { display: none; }
 
     </style>
@@ -275,10 +269,11 @@
     <div class="viewport" id="viewport">
         <div class="empty-state" id="placeholder">
             <div style="font-size: 2rem; margin-bottom: 0.5rem;">⊕</div>
-            drag & drop or import image<br>
-            <span style="font-size: 0.85rem; opacity: 0.8">click & drag to pan canvas</span>
+            drag & drop or click to import<br>
+            <span style="font-size: 0.85rem; opacity: 0.8">pan canvas enabled after load</span>
         </div>
         <canvas id="canvas"></canvas>
+        <input type="file" id="upload" accept="image/*">
     </div>
 
     <div class="sidebar">
@@ -290,14 +285,8 @@
         </header>
 
         <div class="actions">
-            <div class="upload-wrapper">
-                <button class="upload-btn" onclick="document.getElementById('upload').click()">
-                    <span>import source image</span>
-                </button>
-                <input type="file" id="upload" accept="image/*">
-            </div>
-            <button id="resetBtn">Reset</button>
-            <button id="saveBtn">Export</button>
+            <button id="resetBtn">reset</button>
+            <button id="saveBtn">export</button>
         </div>
 
         <!-- 1. Basic Adjustment -->
@@ -486,7 +475,7 @@
     document.getElementById('saveBtn').addEventListener('click', saveImage);
     document.getElementById('resetBtn').addEventListener('click', resetAll);
 
-    // Viewport Drag
+    // Viewport Drag & Import
     viewport.addEventListener('dragover', (e) => { e.preventDefault(); viewport.style.background = 'rgba(255,255,255,0.3)'; });
     viewport.addEventListener('dragleave', (e) => { e.preventDefault(); viewport.style.background = 'rgba(255,255,255,0.2)'; });
     viewport.addEventListener('drop', (e) => {
@@ -495,12 +484,19 @@
         if(file && file.type.startsWith('image/')) loadFile(file);
     });
 
+    // Click to import (only if empty)
+    viewport.addEventListener('click', (e) => {
+        if (!loaded) {
+            document.getElementById('upload').click();
+        }
+    });
+
     viewport.addEventListener('mousedown', (e) => {
         if(!loaded) return;
         isDragging = true;
         startX = e.clientX - currentX;
         startY = e.clientY - currentY;
-        viewport.style.cursor = 'grabbing';
+        viewport.classList.add('has-image');
     });
 
     window.addEventListener('mousemove', (e) => {
@@ -510,7 +506,7 @@
         currentY = e.clientY - startY;
         canvas.style.transform = `translate(${currentX}px, ${currentY}px)`;
     });
-    window.addEventListener('mouseup', () => { isDragging = false; viewport.style.cursor = 'grab'; });
+    window.addEventListener('mouseup', () => { isDragging = false; });
 
     // Input Changes
     Object.keys(params).forEach(key => {
@@ -548,6 +544,7 @@
 
                 loaded = true;
                 placeholder.style.display = 'none';
+                viewport.classList.add('has-image');
                 
                 const rect = viewport.getBoundingClientRect();
                 currentX = (rect.width / 2) - (w / 2);
