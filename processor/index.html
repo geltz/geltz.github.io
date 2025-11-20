@@ -14,6 +14,7 @@
             --color-primary: #3f6c9b;
             --color-primary-light: #5a8fbe;
             --color-accent: #7aa6d4;
+            --color-track: #cfdee9; /* Pale blue for sliders */
             --color-text: #405165;
             --color-text-light: #6c8dab;
             
@@ -171,26 +172,59 @@
             font-variant-numeric: tabular-nums;
         }
 
+        /* --- New Slider Style --- */
         input[type=range] {
             -webkit-appearance: none;
             width: 100%;
             background: transparent;
+            margin: 4px 0;
         }
         input[type=range]:focus { outline: none; }
-        input[type=range]::-webkit-slider-runnable-track {
-            width: 100%; height: 6px; cursor: pointer;
-            background: rgba(63, 108, 155, 0.15);
-            border-radius: 10px;
-        }
-        input[type=range]::-webkit-slider-thumb {
-            height: 16px; width: 16px; border-radius: 50%;
-            background: #fff; border: 2px solid var(--color-accent);
-            cursor: pointer; -webkit-appearance: none;
-            margin-top: -5px; box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-            transition: transform 0.1s, background 0.2s;
-        }
-        input[type=range]:hover::-webkit-slider-thumb { transform: scale(1.1); border-color: var(--color-primary); }
         
+        /* Track */
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%; 
+            height: 8px; 
+            cursor: pointer;
+            background: var(--color-track);
+            border-radius: 4px;
+            transition: background 0.2s;
+        }
+        
+        /* Thumb */
+        input[type=range]::-webkit-slider-thumb {
+            height: 16px; 
+            width: 16px; 
+            border-radius: 50%;
+            background: var(--color-primary-light); 
+            cursor: pointer; 
+            -webkit-appearance: none;
+            margin-top: -4px; /* Centers thumb on track */
+            box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        /* Interactions */
+        input[type=range]:hover::-webkit-slider-thumb { 
+            transform: scale(1.25); 
+            background: var(--color-primary); 
+            box-shadow: 0 0 0 4px rgba(63, 108, 155, 0.1);
+        }
+        
+        /* Firefox specific */
+        input[type=range]::-moz-range-track {
+            width: 100%; height: 8px; cursor: pointer;
+            background: var(--color-track); border-radius: 4px;
+        }
+        input[type=range]::-moz-range-thumb {
+            height: 16px; width: 16px; border: none; border-radius: 50%;
+            background: var(--color-primary-light); cursor: pointer;
+            transition: all 0.2s;
+        }
+        input[type=range]:hover::-moz-range-thumb {
+            transform: scale(1.25); background: var(--color-primary);
+        }
+
         /* Color Input */
         input[type=color] {
             -webkit-appearance: none; border: none;
@@ -281,31 +315,29 @@
                 <div class="label-row"><label>Saturation</label> <span id="val-sat" class="value-display">0</span></div>
                 <input type="range" id="sat" min="-100" max="100" value="0">
             </div>
+            <div class="control-group">
+                <div class="label-row"><label>Hue Shift</label> <span id="val-hue" class="value-display">0</span></div>
+                <input type="range" id="hue" min="0" max="360" value="0">
+            </div>
         </div>
 
-        <!-- 2. Filters (Heavy & Voronoi) -->
+        <!-- 2. Filters -->
         <div class="controls">
             <div class="section-title">Filters <span>ART</span></div>
             
-            <!-- Kuwahara (Optimized) -->
             <div class="control-group">
                 <div class="label-row"><label>Kuwahara</label> <span id="val-kuwahara" class="value-display">0</span></div>
                 <input type="range" id="kuwahara" min="0" max="20" value="0">
             </div>
 
-            <!-- Voronoi -->
-            <div class="control-group">
+             <div class="control-group">
                 <div class="label-row"><label>Voronoi Cells</label> <span id="val-voroCells" class="value-display">0</span></div>
                 <input type="range" id="voroCells" min="0" max="500" value="0" step="10">
             </div>
+            
             <div class="control-group">
-                <div class="label-row"><label>Voronoi Smoothness</label> <span id="val-voroSmooth" class="value-display">0</span></div>
-                <input type="range" id="voroSmooth" min="0" max="100" value="0">
-            </div>
-
-             <div class="control-group">
-                <div class="label-row"><label>Edge Detect</label> <span id="val-edge" class="value-display">0</span></div>
-                <input type="range" id="edge" min="0" max="100" value="0">
+                <div class="label-row"><label>Motion Blur</label> <span id="val-mBlur" class="value-display">0</span></div>
+                <input type="range" id="mBlur" min="0" max="100" value="0">
             </div>
         </div>
 
@@ -342,6 +374,11 @@
                 <div class="label-row"><label>Mosaic</label> <span id="val-mosaic" class="value-display">1</span></div>
                 <input type="range" id="mosaic" min="1" max="50" value="1">
             </div>
+
+            <div class="control-group">
+                <div class="label-row"><label>Ripple</label> <span id="val-ripple" class="value-display">0</span></div>
+                <input type="range" id="ripple" min="0" max="50" value="0">
+            </div>
             
             <div class="control-group">
                 <div class="label-row"><label>VHS Jitter</label> <span id="val-jitter" class="value-display">0</span></div>
@@ -351,6 +388,11 @@
             <div class="control-group">
                 <div class="label-row"><label>RGB Split</label> <span id="val-shift" class="value-display">0</span></div>
                 <input type="range" id="shift" min="0" max="50" value="0">
+            </div>
+
+            <div class="control-group">
+                <div class="label-row"><label>Dither (Retro)</label> <span id="val-dither" class="value-display">0</span></div>
+                <input type="range" id="dither" min="0" max="100" value="0">
             </div>
 
             <div class="control-group">
@@ -376,6 +418,11 @@
                     <label>Border Color</label>
                     <input type="color" id="borderColor" value="#000000">
                 </div>
+            </div>
+            
+            <div class="control-group">
+                <div class="label-row"><label>Edge Detect</label> <span id="val-edge" class="value-display">0</span></div>
+                <input type="range" id="edge" min="0" max="100" value="0">
             </div>
         </div>
     </div>
@@ -412,19 +459,22 @@
         bright: document.getElementById('bright'),
         contrast: document.getElementById('contrast'),
         sat: document.getElementById('sat'),
+        hue: document.getElementById('hue'), // New
         
         kuwahara: document.getElementById('kuwahara'),
         edge: document.getElementById('edge'),
         voroCells: document.getElementById('voroCells'),
-        voroSmooth: document.getElementById('voroSmooth'),
+        mBlur: document.getElementById('mBlur'), // New
         
         sortDir: document.getElementById('sortDir'),
         sortThresh: document.getElementById('sortThresh'),
         sortRand: document.getElementById('sortRand'),
         
         mosaic: document.getElementById('mosaic'),
+        ripple: document.getElementById('ripple'), // New
         jitter: document.getElementById('jitter'),
         shift: document.getElementById('shift'),
+        dither: document.getElementById('dither'), // New
         noise: document.getElementById('noise'),
         
         borderWidth: document.getElementById('borderWidth'),
@@ -482,7 +532,6 @@
         const reader = new FileReader();
         reader.onload = (event) => {
             srcImage.onload = () => {
-                // Constrain max size to prevent browser crash
                 const MAX_DIM = 1600; 
                 let w = srcImage.width;
                 let h = srcImage.height;
@@ -553,7 +602,7 @@
         const w = canvas.width;
         const h = canvas.height;
 
-        // 1. BASE LAYER (Mosaic handled first for pixelation)
+        // 1. BASE LAYER (Mosaic / Pixelate first)
         tempCtx.clearRect(0, 0, w, h);
         const mosaicVal = parseInt(params.mosaic.value);
         if (mosaicVal > 1) {
@@ -566,22 +615,55 @@
             tempCtx.drawImage(srcImage, 0, 0, w, h);
         }
 
-        // Transfer to main context for heavy processing
+        // Draw to main context
         ctx.clearRect(0, 0, w, h);
         ctx.drawImage(tempCanvas, 0, 0);
 
-        let imageData = ctx.getImageData(0, 0, w, h);
-        const data = imageData.data; // Reference to array
+        // 2. MOTION BLUR (Geometry based, using ctx)
+        const mBlur = parseInt(params.mBlur.value);
+        if (mBlur > 0) {
+            ctx.globalAlpha = 0.5;
+            const step = Math.max(1, mBlur / 5);
+            for(let i=1; i<4; i++) {
+                const offset = (mBlur/3) * i;
+                // Simple horizontal smear
+                ctx.drawImage(canvas, offset, 0);
+            }
+            ctx.globalAlpha = 1.0;
+        }
+        
+        // 3. RIPPLE (Geometry based)
+        const rippleVal = parseInt(params.ripple.value);
+        if (rippleVal > 0) {
+            // We need to read image, distort, put back.
+            // This is expensive, so we use a slice-based approach for perf or skip if too large
+            // Let's do a simple Sine wave slice draw
+            const tempC = document.createElement('canvas');
+            tempC.width = w; tempC.height = h;
+            tempC.getContext('2d').drawImage(canvas, 0, 0);
+            
+            ctx.clearRect(0,0,w,h);
+            // Draw slices with offset
+            const freq = 0.05;
+            for (let y = 0; y < h; y++) {
+                const offX = Math.sin(y * freq) * rippleVal;
+                ctx.drawImage(tempC, 0, y, w, 1, offX, y, w, 1);
+            }
+        }
 
-        // 2. HEAVY FILTERS (Kuwahara / Voronoi / Sorting)
+        // GET PIXELS
+        let imageData = ctx.getImageData(0, 0, w, h);
+        const data = imageData.data; 
+
+        // 4. HEAVY FILTERS (Kuwahara / Voronoi / Sorting)
         
         // A. Voronoi
         const voroCells = parseInt(params.voroCells.value);
         if (voroCells > 0) {
-            applyVoronoi(data, w, h, voroCells, parseInt(params.voroSmooth.value));
+            applyVoronoi(data, w, h, voroCells);
         }
 
-        // B. Kuwahara (Optimized)
+        // B. Kuwahara 
         const kuwaharaVal = parseInt(params.kuwahara.value);
         if (kuwaharaVal > 0) {
             applyKuwaharaOptimized(data, w, h, kuwaharaVal);
@@ -590,51 +672,34 @@
         // C. Pixel Sorting
         const sortRand = parseInt(params.sortRand.value);
         const sortThresh = parseFloat(params.sortThresh.value);
-        // Only run if randomness > 0 OR threshold is not default (implies user intent)
-        // actually run always if params suggest
         if (sortRand > 0 || sortThresh !== 0.5 || params.sortDir.value !== 'horizontal') {
-            // We treat 0 randomness and default threshold as "active" only if explicitly changed?
-            // Let's just check if threshold acts on image.
-            // To save perf, skip if default params and rand is 0? No, allow 0.5 sort.
-            // We'll just run it.
              applyPixelSorting(data, w, h, sortThresh, params.sortDir.value, sortRand);
         }
 
-        // D. Edge Detection
-        const edgeVal = parseInt(params.edge.value);
-        if (edgeVal > 0) {
-            // Clone data for source
-            const copy = new Uint8ClampedArray(data);
-            applyEdgeDetection(data, copy, w, h, edgeVal);
-        }
-
-        // 3. COLOR & POST FX
-        // Get basics
+        // 5. COLOR & POST FX LOOP
         const pBright = parseInt(params.bright.value);
         const pContrast = parseInt(params.contrast.value);
         const pSat = parseInt(params.sat.value);
+        const pHue = parseInt(params.hue.value);
         const pShift = parseInt(params.shift.value);
         const pNoise = parseInt(params.noise.value);
-        const jitterVal = parseInt(params.jitter.value);
-
+        const pDither = parseInt(params.dither.value);
+        
         const contrastFactor = (259 * (pContrast + 255)) / (255 * (259 - pContrast));
-
-        // We iterate again for pixel-by-pixel color ops
-        // Note: Jitter is geometric, usually done via drawImage slices, but here we do row-shifting in array
-        // for simplicity in the single pass or post-pass.
-        // Let's do Jitter via canvas drawImage after putImageData to be faster/easier.
+        
+        // Pre-calculate hue shift params
+        const cosHue = Math.cos(pHue * Math.PI / 180);
+        const sinHue = Math.sin(pHue * Math.PI / 180);
 
         for (let i = 0; i < data.length; i += 4) {
             let r = data[i];
             let g = data[i+1];
             let b = data[i+2];
 
-            // RGB Split (Shift Red channel)
+            // RGB Split
             if (pShift > 0) {
                 const offset = pShift * 4;
-                if (i + offset < data.length) {
-                    r = data[i + offset];
-                }
+                if (i + offset < data.length) r = data[i + offset];
             }
 
             // Brightness
@@ -656,6 +721,36 @@
                 b = gray + (b - gray) * s;
             }
 
+            // Hue Shift
+            if (pHue > 0) {
+                // Rotation matrix approximation for RGB
+                const newR = (0.213 + cosHue * 0.787 - sinHue * 0.213) * r + 
+                             (0.715 - cosHue * 0.715 - sinHue * 0.715) * g + 
+                             (0.072 - cosHue * 0.072 + sinHue * 0.928) * b;
+                const newG = (0.213 - cosHue * 0.213 + sinHue * 0.143) * r + 
+                             (0.715 + cosHue * 0.285 + sinHue * 0.140) * g + 
+                             (0.072 - cosHue * 0.072 - sinHue * 0.283) * b;
+                const newB = (0.213 - cosHue * 0.213 - sinHue * 0.787) * r + 
+                             (0.715 - cosHue * 0.715 + sinHue * 0.715) * g + 
+                             (0.072 + cosHue * 0.928 + sinHue * 0.072) * b;
+                r = newR; g = newG; b = newB;
+            }
+
+            // Dither (1-bit ish noise dither)
+            if (pDither > 0) {
+                const thresh = 128;
+                const strength = pDither / 100;
+                const gray = (r+g+b)/3;
+                const ditherVal = (Math.random() * 255);
+                if ((gray + (ditherVal * strength)) < 200) {
+                    // darker
+                    r = r * (1-strength); g = g * (1-strength); b = b * (1-strength);
+                } else {
+                    // lighter
+                    r = r + (255-r)*strength; g = g + (255-g)*strength; b = b + (255-b)*strength;
+                }
+            }
+
             // Noise
             if (pNoise > 0) {
                 const n = (Math.random() - 0.5) * pNoise * 2.5;
@@ -665,31 +760,37 @@
             data[i] = r; data[i+1] = g; data[i+2] = b;
         }
 
+        // Edge Detection pass
+        const edgeVal = parseInt(params.edge.value);
+        if (edgeVal > 0) {
+             // Apply to copy then blend? 
+             // We have to create a copy for kernel ops
+             const copy = new Uint8ClampedArray(data);
+             applyEdgeDetection(data, copy, w, h, edgeVal);
+        }
+
         // Commit pixel data
         ctx.putImageData(imageData, 0, 0);
 
-        // 4. GEOMETRY (Jitter)
+        // 6. VHS JITTER
+        const jitterVal = parseInt(params.jitter.value);
         if (jitterVal > 0) {
-            // Draw slices
             const numSlices = h / 4;
             for (let i = 0; i < numSlices; i++) {
                 if (Math.random() > 0.9) {
                     const sy = Math.floor(Math.random() * h);
                     const sh = Math.floor(Math.random() * 20) + 1;
                     const dx = (Math.random() - 0.5) * jitterVal * 2;
-                    // We need to draw from canvas to canvas
-                    // Copy current state
                     ctx.drawImage(canvas, 0, sy, w, sh, dx, sy, w, sh);
                 }
             }
         }
 
-        // 5. BORDER
+        // 7. BORDER
         const borderWidth = parseInt(params.borderWidth.value);
         if (borderWidth > 0) {
             ctx.strokeStyle = params.borderColor.value;
             ctx.lineWidth = borderWidth;
-            // Draw INSET border so it doesn't change canvas size
             ctx.strokeRect(borderWidth/2, borderWidth/2, w - borderWidth, h - borderWidth);
         }
 
@@ -698,15 +799,10 @@
 
     /* --- ALGORITHMS --- */
 
-    // 1. OPTIMIZED KUWAHARA (Integral Image)
-    // Complexity: O(1) per pixel regardless of radius
     function applyKuwaharaOptimized(data, width, height, radius) {
         const w = width, h = height;
         const numPixels = w * h;
         
-        // Allocate integral arrays (Float32 for precision)
-        // We need sums for r,g,b and r^2,g^2,b^2 to calculate variance
-        // Indexing: y * w + x
         const satR = new Float32Array(numPixels);
         const satG = new Float32Array(numPixels);
         const satB = new Float32Array(numPixels);
@@ -715,19 +811,14 @@
         const satB2 = new Float32Array(numPixels);
 
         // 1. Build SAT
-        let sumR=0, sumG=0, sumB=0, sumR2=0, sumG2=0, sumB2=0;
-        
         for (let y = 0; y < h; y++) {
-            // Row running sums
             let rowR=0, rowG=0, rowB=0, rowR2=0, rowG2=0, rowB2=0;
             for (let x = 0; x < w; x++) {
                 const idx = (y * w + x) * 4;
                 const r = data[idx], g = data[idx+1], b = data[idx+2];
-                
                 rowR += r; rowG += g; rowB += b;
                 rowR2 += r*r; rowG2 += g*g; rowB2 += b*b;
 
-                // Add previous row's val
                 if (y === 0) {
                     satR[y*w+x] = rowR; satG[y*w+x] = rowG; satB[y*w+x] = rowB;
                     satR2[y*w+x] = rowR2; satG2[y*w+x] = rowG2; satB2[y*w+x] = rowB2;
@@ -743,7 +834,6 @@
             }
         }
 
-        // Helper to get sum of rect (x1,y1) to (x2,y2) inclusive
         function getSum(sat, x1, y1, x2, y2) {
             x1 = Math.max(0, x1); y1 = Math.max(0, y1);
             x2 = Math.min(w-1, x2); y2 = Math.min(h-1, y2);
@@ -756,31 +846,24 @@
             return a - b - c + d;
         }
 
-        // 2. Filter
-        // (r+1) is the quadrant size including center
         const r = radius;
-        
         for (let y = 0; y < h; y++) {
             for (let x = 0; x < w; x++) {
                 let minVar = Number.MAX_VALUE;
                 let finalR = 0, finalG = 0, finalB = 0;
 
-                // Four quadrants: (x-r, y-r) to (x,y); (x, y-r) to (x+r, y); etc.
-                // Q0: Top-Left, Q1: Top-Right, Q2: Bottom-Left, Q3: Bottom-Right
                 const bounds = [
-                    [x-r, y-r, x, y],     // TL
-                    [x, y-r, x+r, y],     // TR
-                    [x-r, y, x, y+r],     // BL
-                    [x, y, x+r, y+r]      // BR
+                    [x-r, y-r, x, y],     
+                    [x, y-r, x+r, y],     
+                    [x-r, y, x, y+r],     
+                    [x, y, x+r, y+r]      
                 ];
 
                 for (let i = 0; i < 4; i++) {
                     const [x1, y1, x2, y2] = bounds[i];
-                    // Clamp for count
                     const cx1 = Math.max(0, x1), cy1 = Math.max(0, y1);
                     const cx2 = Math.min(w-1, x2), cy2 = Math.min(h-1, y2);
                     const count = (cx2 - cx1 + 1) * (cy2 - cy1 + 1);
-                    
                     if (count === 0) continue;
 
                     const sR = getSum(satR, x1, y1, x2, y2);
@@ -790,11 +873,7 @@
                     const sG2 = getSum(satG2, x1, y1, x2, y2);
                     const sB2 = getSum(satB2, x1, y1, x2, y2);
 
-                    const mR = sR / count;
-                    const mG = sG / count;
-                    const mB = sB / count;
-
-                    // Variance = (SumSq / N) - Mean^2
+                    const mR = sR / count; const mG = sG / count; const mB = sB / count;
                     const vR = (sR2 / count) - (mR * mR);
                     const vG = (sG2 / count) - (mG * mG);
                     const vB = (sB2 / count) - (mB * mB);
@@ -805,122 +884,70 @@
                         finalR = mR; finalG = mG; finalB = mB;
                     }
                 }
-
                 const idx = (y * w + x) * 4;
-                data[idx] = finalR;
-                data[idx+1] = finalG;
-                data[idx+2] = finalB;
+                data[idx] = finalR; data[idx+1] = finalG; data[idx+2] = finalB;
             }
         }
     }
 
-    // 2. PIXEL SORTING
     function applyPixelSorting(data, w, h, threshold, direction, randomness) {
-        // Helper: Luminance
         function getLum(idx) {
             return 0.299*data[idx] + 0.587*data[idx+1] + 0.114*data[idx+2];
         }
-
-        // We process row by row or col by col
         const isVert = direction === 'vertical';
         const major = isVert ? w : h;
         const minor = isVert ? h : w;
 
-        const rowBuffer = new Float32Array(minor); // Stores indices or values
-        
         for (let i = 0; i < major; i++) {
-            // If vertical, i is x, we iterate y
-            // If horizontal, i is y, we iterate x
             let start = 0;
             while (start < minor) {
-                // Find start of a segment > threshold
                 let curr = start;
                 let idx = isVert ? (curr * w + i) * 4 : (i * w + curr) * 4;
                 
-                // Skip pixels below threshold
                 while (curr < minor && getLum(idx) < threshold * 255) {
                     curr++;
                     if (curr < minor) idx = isVert ? (curr * w + i) * 4 : (i * w + curr) * 4;
                 }
                 
-                if (curr >= minor) break; // End of line
-                
-                // Found start of sortable segment
+                if (curr >= minor) break; 
                 let segStart = curr;
                 
-                // Find end of segment
                 while (curr < minor && getLum(idx) >= threshold * 255) {
                     curr++;
                     if (curr < minor) idx = isVert ? (curr * w + i) * 4 : (i * w + curr) * 4;
                 }
                 let segEnd = curr;
 
-                // Extract pixels in segment [segStart, segEnd)
                 const len = segEnd - segStart;
                 if (len > 1) {
-                    // Create array of objects {lum, r, g, b} to sort
                     const pixels = [];
                     for (let k = 0; k < len; k++) {
                         const pIdx = isVert ? ((segStart + k) * w + i) * 4 : (i * w + (segStart + k)) * 4;
                         const lum = getLum(pIdx);
-                        // Add noise to lum for randomness
-                        const noise = (Math.random() - 0.5) * randomness * 5; // Arbitrary scale
-                        pixels.push({
-                            l: lum + noise,
-                            r: data[pIdx],
-                            g: data[pIdx+1],
-                            b: data[pIdx+2]
-                        });
+                        const noise = (Math.random() - 0.5) * randomness * 5; 
+                        pixels.push({ l: lum + noise, r: data[pIdx], g: data[pIdx+1], b: data[pIdx+2] });
                     }
-                    
-                    // Sort
                     pixels.sort((a, b) => a.l - b.l);
                     
-                    // Write back
                     for (let k = 0; k < len; k++) {
                         const pIdx = isVert ? ((segStart + k) * w + i) * 4 : (i * w + (segStart + k)) * 4;
-                        data[pIdx] = pixels[k].r;
-                        data[pIdx+1] = pixels[k].g;
-                        data[pIdx+2] = pixels[k].b;
+                        data[pIdx] = pixels[k].r; data[pIdx+1] = pixels[k].g; data[pIdx+2] = pixels[k].b;
                     }
                 }
-                
                 start = segEnd;
             }
         }
     }
 
-    // 3. VORONOI TESSELLATION
-    function applyVoronoi(data, w, h, numCells, smoothness) {
-        // 1. Generate Sites
+    function applyVoronoi(data, w, h, numCells) {
         const sites = [];
         for (let i = 0; i < numCells; i++) {
             const x = Math.floor(Math.random() * w);
             const y = Math.floor(Math.random() * h);
             const idx = (y * w + x) * 4;
-            sites.push({
-                x: x,
-                y: y,
-                r: data[idx],
-                g: data[idx+1],
-                b: data[idx+2]
-            });
+            sites.push({ x: x, y: y, r: data[idx], g: data[idx+1], b: data[idx+2] });
         }
 
-        // 2. Assign Pixels (Hard Voronoi)
-        // Optimized: We don't check all N sites for every pixel. 
-        // We can check a random subset or just do brute force if N is small (<500).
-        // 500 * 1000 * 1000 = 500M ops, slow but manageable in JS? Might lag.
-        // Let's do Brute Force for simplicity but warn in UI via max slider.
-        
-        // NOTE: To support "Smoothness" without massive CPU cost of Softmax per pixel:
-        // We render Hard Voronoi, and then if smoothness > 0, we blend original or blur.
-        // Real Soft Voronoi on CPU is too slow for interactive JS. 
-        // We will assume "Smoothness" means blending back with the original image 
-        // to create a "stained glass overlay" effect, or blurring the boundaries.
-        // Let's do: Hard Voronoi -> Write to Data.
-        // If Smoothness > 0, we actually perform a box blur on the resulting data.
-        
         const output = new Uint8ClampedArray(data.length);
         
         for (let y = 0; y < h; y++) {
@@ -928,15 +955,11 @@
                 let minDist = Number.MAX_VALUE;
                 let closest = sites[0];
                 
-                // Simple optimization: only check sites roughly nearby? 
-                // No, global structure requires all.
-                // Loop unrolling helps slightly.
-                
                 for (let i = 0; i < numCells; i++) {
                     const s = sites[i];
                     const dx = x - s.x;
                     const dy = y - s.y;
-                    const d = dx*dx + dy*dy; // squared dist
+                    const d = dx*dx + dy*dy; 
                     if (d < minDist) {
                         minDist = d;
                         closest = s;
@@ -944,71 +967,31 @@
                 }
                 
                 const idx = (y * w + x) * 4;
-                output[idx] = closest.r;
-                output[idx+1] = closest.g;
-                output[idx+2] = closest.b;
-                output[idx+3] = 255;
+                output[idx] = closest.r; output[idx+1] = closest.g; output[idx+2] = closest.b; output[idx+3] = 255;
             }
         }
-
-        // Copy back
         for (let i=0; i<data.length; i++) data[i] = output[i];
-
-        // Fake "Smoothness" via Box Blur if requested
-        // (True Soft Voronoi is O(N*Pixels) with Exp math, too slow)
-        if (smoothness > 0) {
-            const radius = Math.floor(smoothness / 5); // 0 to 20
-            if(radius > 0) {
-               // Reuse the optimized Kuwahara mean calculation? 
-               // Or just simple box blur. Let's do simple box blur 
-               // using a separate simple pass.
-               // Actually, let's just mix with original image? 
-               // No, blur looks more like "Soft Voronoi".
-               // Use a fast approximate blur: stack blur logic or horizontal+vertical pass.
-               // For code golf size, we'll skip complex blur and just blend with original.
-               
-               // Better strategy for "Smoothness" in Voronoi context: 
-               // It often means "Cell roundness". We can't do that easily on CPU.
-               // We will blend with the original image.
-               const blend = smoothness / 100;
-               // Re-read original from a copy? We modified 'data' in place.
-               // But we lost original in this function scope? 
-               // We processed IN PLACE. 
-               // It's fine, Voronoi is destructive. 
-            }
-        }
     }
 
-    // 4. EDGE DETECTION
     function applyEdgeDetection(dest, src, width, height, amount) {
         const w = width;
         const mix = amount / 100;
         for (let y = 1; y < height - 1; y++) {
             for (let x = 1; x < width - 1; x++) {
                 const idx = (y * w + x) * 4;
-                // Sobel-ish kernel
                 let gx = 0, gy = 0;
                 
-                // X Kernel
-                // -1 0 1
-                // -2 0 2
-                // -1 0 1
+                // Sobel
                 gx += (-1 * src[((y-1)*w + x-1)*4]) + (1 * src[((y-1)*w + x+1)*4]);
                 gx += (-2 * src[((y)*w + x-1)*4]) + (2 * src[((y)*w + x+1)*4]);
                 gx += (-1 * src[((y+1)*w + x-1)*4]) + (1 * src[((y+1)*w + x+1)*4]);
 
-                // Y Kernel
-                // -1 -2 -1
-                //  0  0  0
-                //  1  2  1
                 gy += (-1 * src[((y-1)*w + x-1)*4]) + (-2 * src[((y-1)*w + x)*4]) + (-1 * src[((y-1)*w + x+1)*4]);
                 gy += (1 * src[((y+1)*w + x-1)*4]) + (2 * src[((y+1)*w + x)*4]) + (1 * src[((y+1)*w + x+1)*4]);
 
                 const mag = Math.abs(gx) + Math.abs(gy);
                 const isEdge = mag > 100 ? 255 : 0;
                 
-                // If edge, draw white (or inverted). If not, draw original.
-                // Let's do "Highlight Edges" style.
                 if (isEdge) {
                     dest[idx] = src[idx]*(1-mix) + 255*mix;
                     dest[idx+1] = src[idx+1]*(1-mix) + 255*mix;
