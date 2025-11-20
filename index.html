@@ -5,16 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>geltz</title>
     <style>
-        /* --- CSS Variables based on your provided palette --- */
+        /* --- CSS Variables --- */
         :root {
             --bg-gradient-start: #dfeaf5;
             --bg-gradient-mid: #edf3f8;
             --bg-gradient-end: #f6f9fc;
             
-            --color-primary: #3f6c9b; /* Main Blue */
-            --color-primary-light: #5a8fbe; /* Lighter Blue */
-            --color-accent: #7aa6d4; /* Accent Blue */
-            --color-text: #405165; /* Greyish Blue Text */
+            --color-primary: #3f6c9b;
+            --color-primary-light: #5a8fbe;
+            --color-accent: #7aa6d4;
+            --color-text: #405165;
             
             --glass-bg: rgba(255, 255, 255, 0.65);
             --glass-border: rgba(255, 255, 255, 0.8);
@@ -32,26 +32,26 @@
             align-items: center;
             justify-content: center;
             padding: 2rem;
-            overflow-x: hidden; /* Prevent scroll from hover effects */
-            cursor: default; /* Optional: custom cursor could go here */
+            overflow-x: hidden;
+            cursor: default;
         }
 
-        /* --- The Flashlight Overlay (The "Light Shift" Logic) --- */
+        /* --- The Flashlight Overlay --- */
         #spotlight {
             position: fixed;
             top: 0;
             left: 0;
             width: 100vw;
             height: 100vh;
-            pointer-events: none; /* Allows clicking through it */
+            pointer-events: none;
             z-index: 9999;
             background: radial-gradient(
                 600px circle at var(--x, 50%) var(--y, 50%), 
                 rgba(255, 255, 255, 0.4), 
                 transparent 40%
             );
-            mix-blend-mode: overlay; /* This lightens underlying colors */
-            opacity: 0; /* Hidden until mouse moves */
+            mix-blend-mode: overlay;
+            opacity: 0;
             transition: opacity 0.5s ease;
         }
 
@@ -60,14 +60,27 @@
             width: 100%;
             text-align: center;
             z-index: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
 
-        /* --- Main Title Styling --- */
-        h1.brand-title {
-            font-size: 4.5rem;
-            font-weight: 800;
-            margin-bottom: 3rem;
-            letter-spacing: -0.05em;
+        /* --- ASCII Container --- */
+        .ascii-container {
+            margin-bottom: 2.5rem; /* Slightly reduced margin */
+            position: relative;
+            user-select: none; 
+            -webkit-user-select: none;
+            padding: 1rem; /* Hitbox for the hover effect */
+        }
+
+        pre.ascii-art {
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: 900;
+            line-height: 0.9;
+            
+            /* --- Size Updates: Smaller as requested --- */
+            font-size: 14px; 
             
             /* Gradient Text Logic */
             background: linear-gradient(90deg, var(--color-primary) 0%, var(--color-accent) 50%, var(--color-primary) 100%);
@@ -75,15 +88,16 @@
             -webkit-background-clip: text;
             background-clip: text;
             -webkit-text-fill-color: transparent;
+            color: var(--color-primary);
             
-            transition: all 0.5s ease;
-            cursor: default;
             animation: shine 8s linear infinite;
+            transition: transform 0.3s ease;
+            cursor: default;
+            white-space: pre; /* Ensures ASCII formatting stays rigid */
         }
-
-        /* Hover interaction for Title */
-        h1.brand-title:hover {
-            background-position: right center;
+        
+        /* Subtle scaling on container hover */
+        .ascii-container:hover pre.ascii-art {
             transform: scale(1.02);
             filter: brightness(1.1);
         }
@@ -93,6 +107,7 @@
             display: flex;
             flex-direction: column;
             gap: 1rem;
+            width: 100%;
         }
 
         .link-item {
@@ -114,7 +129,6 @@
             overflow: hidden;
         }
 
-        /* Link Hover Effects */
         .link-item:hover {
             background: rgba(255, 255, 255, 0.85);
             border-color: var(--color-accent);
@@ -127,85 +141,157 @@
             transform: scale(0.98);
         }
 
-        /* Subtle sub-text inside link (optional) */
-        .link-desc {
-            display: block;
-            font-size: 0.85rem;
-            color: var(--color-text);
-            font-weight: 400;
-            margin-top: 0.25rem;
-            opacity: 0.8;
-            transition: opacity 0.3s;
-        }
-
-        .link-item:hover .link-desc {
-            opacity: 0.6;
-        }
-
-        /* Animation Keyframes */
         @keyframes shine {
             to { background-position: 200% center; }
         }
 
         /* Mobile adjustments */
-        @media (max-width: 580px) {
-            h1.brand-title { font-size: 3.5rem; }
+        @media (max-width: 600px) {
+            pre.ascii-art { font-size: 2.8vw; } /* Responsive shrink for mobile */
             .container { padding: 0 1rem; }
+        }
+        
+        @media (min-width: 1200px) {
+            pre.ascii-art { font-size: 16px; } /* Cap size on large screens */
         }
     </style>
 </head>
 <body>
 
-    <!-- The "Flashlight" layer -->
     <div id="spotlight"></div>
 
     <div class="container">
-        <h1 class="brand-title">geltz</h1>
+        
+        <!-- ASCII Container with Mouse Events -->
+        <div class="ascii-container" id="asciiContainer">
+            <pre id="geltz-ascii" class="ascii-art"></pre>
+        </div>
 
         <nav class="link-list">
-		
-		    <a href="https://geltz.github.io/metadata" class="link-item" target="_blank">
+            <a href="https://geltz.github.io/metadata" class="link-item" target="_blank">
                 metadata
             </a>
-		
-			<a href="https://geltz.github.io/palette" class="link-item" target="_blank">
+            <a href="https://geltz.github.io/palette" class="link-item" target="_blank">
                 palette
             </a>
-			
             <a href="https://geltz.github.io/processor" class="link-item" target="_blank">
                 processor
             </a>
-
         </nav>
     </div>
 
     <script>
-        // Simple script to track mouse movement for the "Flashlight" effect
+        // --- 1. Spotlight Effect ---
         const spotlight = document.getElementById('spotlight');
         let opacitySet = false;
 
-        document.addEventListener('mousemove', (e) => {
-            // Update CSS variables with mouse position
-            spotlight.style.setProperty('--x', e.clientX + 'px');
-            spotlight.style.setProperty('--y', e.clientY + 'px');
-
-            // Reveal the spotlight on first movement
+        const handleMove = (x, y) => {
+            spotlight.style.setProperty('--x', x + 'px');
+            spotlight.style.setProperty('--y', y + 'px');
             if (!opacitySet) {
                 spotlight.style.opacity = '1';
                 opacitySet = true;
             }
-        });
+        };
 
-        // Optional: Mobile touch support for the effect
+        document.addEventListener('mousemove', (e) => handleMove(e.clientX, e.clientY));
         document.addEventListener('touchmove', (e) => {
             const touch = e.touches[0];
-            spotlight.style.setProperty('--x', touch.clientX + 'px');
-            spotlight.style.setProperty('--y', touch.clientY + 'px');
-            if (!opacitySet) {
-                spotlight.style.opacity = '1';
-                opacitySet = true;
-            }
+            handleMove(touch.clientX, touch.clientY);
         });
+
+        // --- 2. Wave Distortion ASCII Logic ---
+        
+        const baseArt = [
+            "  ____ _____ _    _____ _____  ",
+            " / ___| ____| |  |_   _|__  /  ",
+            "| |  _|  _| | |    | |   / /   ",
+            "| |_| | |___| |___ | |  / /_   ",
+            " \\____|_____|_____||_| /____|  "
+        ];
+
+        const asciiElement = document.getElementById('geltz-ascii');
+        const container = document.getElementById('asciiContainer');
+
+        // Techy symbols to swap during the "wave"
+        const chars = "01iI|!/\\><-~=+*"; 
+        
+        // Render function
+        function renderAscii(mouseX = null) {
+            let output = "";
+            
+            // If mouseX is provided, we calculate the distortion
+            const rect = asciiElement.getBoundingClientRect();
+            
+            // Map mouse pixel position to a character column index (approximate)
+            // The artwork is approx 31 chars wide.
+            const charWidth = rect.width / 31; 
+            
+            // If mouse is not null, calculate relative X inside the element
+            let targetCol = -999;
+            if (mouseX !== null) {
+                targetCol = Math.floor((mouseX - rect.left) / charWidth);
+            }
+
+            baseArt.forEach((line, lineIdx) => {
+                let newLine = "";
+                
+                // Iterate through every character in the line
+                for (let i = 0; i < line.length; i++) {
+                    const originalChar = line[i];
+                    
+                    // Distance between current char and the mouse cursor column
+                    const dist = Math.abs(i - targetCol);
+                    
+                    // Wave Logic:
+                    // If the character is very close to the mouse (dist < 3), high chance of change.
+                    // If it's moderately close (dist < 6), medium chance.
+                    // Otherwise, keep original.
+                    
+                    let noiseChance = 0;
+                    if (dist < 2) noiseChance = 0.9;
+                    else if (dist < 4) noiseChance = 0.5;
+                    else if (dist < 6) noiseChance = 0.1;
+
+                    // Skip empty spaces to keep the silhouette recognizable
+                    if (originalChar !== ' ' && Math.random() < noiseChance) {
+                        newLine += chars[Math.floor(Math.random() * chars.length)];
+                    } else {
+                        newLine += originalChar;
+                    }
+                }
+                output += newLine + "\n";
+            });
+
+            asciiElement.textContent = output;
+        }
+
+        // --- Event Listeners for the Wave ---
+
+        // 1. Mouse Move: Trigger the wave at the specific column
+        container.addEventListener('mousemove', (e) => {
+            renderAscii(e.clientX);
+        });
+
+        // 2. Mouse Leave: Snap back to clean text immediately
+        container.addEventListener('mouseleave', () => {
+            renderAscii(null);
+        });
+
+        // 3. Mobile Touch support (tap and drag)
+        container.addEventListener('touchmove', (e) => {
+            e.preventDefault(); // prevent scroll while dragging on title
+            const touch = e.touches[0];
+            renderAscii(touch.clientX);
+        }, { passive: false });
+
+        container.addEventListener('touchend', () => {
+            renderAscii(null);
+        });
+
+        // Initial Render (Clean)
+        renderAscii(null);
+
     </script>
 </body>
 </html>
