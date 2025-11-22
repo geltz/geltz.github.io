@@ -67,20 +67,20 @@
 
         /* --- ASCII Container --- */
         .ascii-container {
-            margin-bottom: 2.5rem; /* Slightly reduced margin */
+            margin-bottom: 3rem; 
             position: relative;
             user-select: none; 
             -webkit-user-select: none;
-            padding: 1rem; /* Hitbox for the hover effect */
+            padding: 1.5rem;
         }
 
         pre.ascii-art {
-            font-family: 'Segoe UI', monospace;
-            font-weight: 1800;
-            line-height: 0.9;
+            font-family: 'Courier New', 'Menlo', monospace; /* Standard monospace for alignment */
+            font-weight: 900; 
+            line-height: 1.1;
             
-            /* --- Size Updates: Smaller as requested --- */
-            font-size: 14px; 
+            /* --- Size Updates: Larger and responsive --- */
+            font-size: 16px; 
             
             /* Gradient Text Logic */
             background: linear-gradient(90deg, var(--color-primary) 0%, var(--color-accent) 50%, var(--color-primary) 100%);
@@ -90,16 +90,19 @@
             -webkit-text-fill-color: transparent;
             color: var(--color-primary);
             
+            /* Enhanced Visibility Shadow (applied to transparent text workaround) */
+            filter: drop-shadow(0 0 15px rgba(63, 108, 155, 0.25));
+
             animation: shine 8s linear infinite;
             transition: transform 0.3s ease;
             cursor: default;
-            white-space: pre; /* Ensures ASCII formatting stays rigid */
+            white-space: pre; 
         }
         
         /* Subtle scaling on container hover */
         .ascii-container:hover pre.ascii-art {
-            transform: scale(1.02);
-            filter: brightness(1.1);
+            transform: scale(1.05);
+            filter: drop-shadow(0 0 20px rgba(63, 108, 155, 0.4)) brightness(1.1);
         }
 
         /* --- Link List Styling --- */
@@ -147,12 +150,14 @@
 
         /* Mobile adjustments */
         @media (max-width: 600px) {
-            pre.ascii-art { font-size: 2.8vw; } /* Responsive shrink for mobile */
+            /* Use vw to ensure the wide ASCII fits on narrow screens */
+            pre.ascii-art { font-size: 3.2vw; } 
             .container { padding: 0 1rem; }
+            .ascii-container { margin-bottom: 2rem; }
         }
         
         @media (min-width: 1200px) {
-            pre.ascii-art { font-size: 16px; } /* Cap size on large screens */
+            pre.ascii-art { font-size: 20px; } /* Cap size on large screens */
         }
     </style>
 </head>
@@ -202,8 +207,14 @@
 
         // --- 2. Wave Distortion ASCII Logic ---
         
+		// 'Slant' style ASCII art
         const baseArt = [
-            "geltz"
+            "             .__   __           ",
+            "   ____   ____ |  |_/  |_________",
+            "  / ___\\_/ __ \\|  |\\   __\\___   /",
+            " / /_/  >  ___/|  |_|  |  /    / ",
+            " \\___  / \\___  >____/__| /_____ \\",
+            "/_____/      \\/                \\/"
         ];
 
         const asciiElement = document.getElementById('geltz-ascii');
@@ -212,44 +223,42 @@
         // Techy symbols to swap during the "wave"
         const chars = "01iI|!/\\><-~=+*"; 
         
+        // Helper: Calculate longest line to determine grid width
+        const maxLineLength = Math.max(...baseArt.map(line => line.length));
+
         // Render function
         function renderAscii(mouseX = null) {
             let output = "";
             
-            // If mouseX is provided, we calculate the distortion
             const rect = asciiElement.getBoundingClientRect();
             
-            // Map mouse pixel position to a character column index (approximate)
-            // The artwork is approx 31 chars wide.
-            const charWidth = rect.width / 31; 
+            // Map mouse pixel position to a character column index
+            // using the pre-calculated maxLineLength
+            const charWidth = rect.width / maxLineLength; 
             
-            // If mouse is not null, calculate relative X inside the element
             let targetCol = -999;
             if (mouseX !== null) {
                 targetCol = Math.floor((mouseX - rect.left) / charWidth);
             }
 
-            baseArt.forEach((line, lineIdx) => {
+            baseArt.forEach((line) => {
                 let newLine = "";
                 
-                // Iterate through every character in the line
+                // Iterate through every character position up to the max width
+                // (We iterate line.length so we don't add noise to the far right empty void)
                 for (let i = 0; i < line.length; i++) {
                     const originalChar = line[i];
                     
                     // Distance between current char and the mouse cursor column
                     const dist = Math.abs(i - targetCol);
                     
-                    // Wave Logic:
-                    // If the character is very close to the mouse (dist < 3), high chance of change.
-                    // If it's moderately close (dist < 6), medium chance.
-                    // Otherwise, keep original.
-                    
                     let noiseChance = 0;
-                    if (dist < 2) noiseChance = 0.9;
-                    else if (dist < 4) noiseChance = 0.5;
+                    if (dist < 2) noiseChance = 0.85;
+                    else if (dist < 4) noiseChance = 0.4;
                     else if (dist < 6) noiseChance = 0.1;
 
                     // Skip empty spaces to keep the silhouette recognizable
+                    // We also check if char is not a space to maintain the font shape
                     if (originalChar !== ' ' && Math.random() < noiseChance) {
                         newLine += chars[Math.floor(Math.random() * chars.length)];
                     } else {
@@ -264,19 +273,19 @@
 
         // --- Event Listeners for the Wave ---
 
-        // 1. Mouse Move: Trigger the wave at the specific column
+        // 1. Mouse Move
         container.addEventListener('mousemove', (e) => {
             renderAscii(e.clientX);
         });
 
-        // 2. Mouse Leave: Snap back to clean text immediately
+        // 2. Mouse Leave
         container.addEventListener('mouseleave', () => {
             renderAscii(null);
         });
 
-        // 3. Mobile Touch support (tap and drag)
+        // 3. Mobile Touch
         container.addEventListener('touchmove', (e) => {
-            e.preventDefault(); // prevent scroll while dragging on title
+            e.preventDefault(); 
             const touch = e.touches[0];
             renderAscii(touch.clientX);
         }, { passive: false });
@@ -285,7 +294,7 @@
             renderAscii(null);
         });
 
-        // Initial Render (Clean)
+        // Initial Render
         renderAscii(null);
 
     </script>
